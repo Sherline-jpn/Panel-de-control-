@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Control de Incidencias - UTC</title>
-    <!-- Tailwind CSS para el diseño institucional -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js para analíticas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Librería para Exportar a Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Librerías para Exportar a PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     
@@ -29,10 +25,8 @@
 </head>
 <body class="bg-utc-light text-gray-800 font-sans min-h-screen flex">
 
-    <!-- BARRA LATERAL (SIDEBAR) -->
     <aside class="w-64 bg-utc-blue text-white flex flex-col justify-between hidden md:flex shadow-xl shrink-0">
         <div class="p-6">
-            <!-- Logotipo Institucional UTC -->
             <div class="mb-8 flex flex-col items-center border-b border-white/10 pb-6">
                 <div class="text-center font-black tracking-tighter leading-none select-none">
                     <span class="text-4xl text-white">u</span><span class="text-4xl text-utc-orange">t</span><span class="text-4xl text-white">c</span>
@@ -41,7 +35,6 @@
                 <div class="mt-1 text-[10px] bg-utc-orange text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Bachillerato</div>
             </div>
 
-            <!-- Menú de Navegación -->
             <nav class="space-y-2">
                 <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider pl-3 mb-2">Módulos</p>
                 
@@ -64,10 +57,8 @@
         </div>
     </aside>
 
-    <!-- CONTENEDOR PRINCIPAL -->
     <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         
-        <!-- BARRA SUPERIOR -->
         <header class="h-16 bg-white border-b border-gray-200 px-8 flex items-center justify-between shadow-sm">
             <div class="w-80">
                 <input type="text" placeholder="Buscar por matrícula o alumno..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-utc-blue">
@@ -83,17 +74,14 @@
             </div>
         </header>
 
-        <!-- ÁREA DE CONTENIDO DINÁMICO -->
         <main class="flex-1 p-8">
 
-            <!-- SECCIÓN 1: DASHBOARD (ESTADÍSTICAS) -->
             <section id="tab-dashboard" class="tab-content block space-y-6">
                 <div>
                     <h2 class="text-2xl font-bold text-utc-blue tracking-tight">Resumen Estadístico Semanal</h2>
                     <p class="text-sm text-gray-500">Métricas acumuladas y distribución del comportamiento del alumnado.</p>
                 </div>
 
-                <!-- Tarjetas KPI -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
                     <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-blue">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total de Incidencias</p>
@@ -113,7 +101,6 @@
                     </div>
                 </div>
 
-                <!-- Gráficas -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <h4 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Flujo Diario de Reportes</h4>
@@ -126,7 +113,6 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN 2: FORMULARIO DE REGISTRO AMPLIO -->
             <section id="tab-registro" class="tab-content hidden max-w-5xl mx-auto">
                 <div class="bg-white p-10 rounded-2xl border border-gray-200 shadow-xl">
                     <div class="mb-8 border-b border-gray-100 pb-4">
@@ -135,7 +121,6 @@
                     </div>
                     
                     <form id="form-incidencia" onsubmit="guardarIncidencia(event)" class="space-y-6">
-                        <!-- Bloque de datos ampliado -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Matrícula del Alumno</label>
@@ -153,9 +138,8 @@
                                 <input type="text" id="grupo" placeholder="Ej. 401-X" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
                             </div>
                             
-                            <!-- NUEVA SELECTOR TRIPLE DE BOTONES CATEGÓRICOS -->
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Eje o Categoría de la Incidencia</label>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Tipo de incidencia</label>
                                 <div class="grid grid-cols-3 gap-2">
                                     <button type="button" onclick="selectCategoria('Académica')" id="cat-Académica" class="cat-btn py-3 px-4 text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
                                         Académica
@@ -171,12 +155,10 @@
                             </div>
                         </div>
 
-                        <!-- DESPLEGABLE DINÁMICO DE SUBCATEGORÍAS -->
                         <div id="contenedor-subcategoria" class="hidden transition-all duration-300">
                             <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Seleccione la Causa o Situación Específica</label>
                             <select id="subcategoria" required class="w-full bg-gray-50 border-2 border-utc-orange rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none bg-white">
-                                <!-- Elementos inyectados por JavaScript -->
-                            </select>
+                                </select>
                         </div>
 
                         <div>
@@ -193,7 +175,6 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN 3: HISTORIAL -->
             <section id="tab-historial" class="tab-content hidden space-y-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -223,8 +204,7 @@
                             </tr>
                         </thead>
                         <tbody id="tabla-cuerpo" class="divide-y divide-gray-100 text-sm text-gray-700 bg-white">
-                            <!-- Inyección dinámica -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </section>
@@ -232,7 +212,6 @@
         </main>
     </div>
 
-    <!-- CONTROLADORES Y LÓGICA DE NEGOCIO -->
     <script>
         // Catálogo formal de opciones extraídas exactamente de tu solicitud
         const opcionesCatalogo = {
@@ -256,7 +235,7 @@
                 "Posesión de objetos no permitidos",
                 "Grabaciones / fotos de otra persona sin autorización",
                 "Salir del salón sin autorización",
-                "Uso no autorizado de celular",
+                "Uso no autorizado de celular/audifonos",
                 "Quedarse dormido en clase",
                 "Grosería hacia compañeros",
                 "Hostigamiento verbal",
@@ -271,7 +250,8 @@
                 "Canalización por conducta",
                 "Mediación de conflictos entre alumnos",
                 "Orientación psicoemocional",
-                "Orientación para el aprendizaje"
+                "Orientación para el aprendizaje",
+                "Seguimiento externo"
             ]
         };
 
@@ -373,10 +353,16 @@
 
             const cuerpo = document.getElementById('tabla-cuerpo');
             cuerpo.innerHTML = '';
+            
             if (total === 0) {
                 cuerpo.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No hay registros cargados actualmente.</td></tr>`;
             } else {
-                incidencias.forEach(item => {
+                // SE AÑADIÓ LA LÓGICA DE ORDENAMIENTO ALFABÉTICO AQUÍ POR NOMBRE DEL ALUMNO
+                const incidenciasOrdenadas = [...incidencias].sort((a, b) => {
+                    return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+                });
+
+                incidenciasOrdenadas.forEach(item => {
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-medium">${item.fecha}</td>
@@ -441,7 +427,9 @@
 
         function exportarExcel() {
             if (incidencias.length === 0) return alert('No hay datos registrados.');
-            const hoja = XLSX.utils.json_to_sheet(incidencias.map(({fecha, matricula, nombre, grupo, tipo, descripcion}) => ({Fecha: fecha, Matrícula: matricula, Alumno: nombre, Grupo: grupo, Incidencia: tipo, Detalles: descripcion})));
+            // Mantiene el orden alfabético también para el reporte excel exportado
+            const ordenadas = [...incidencias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+            const hoja = XLSX.utils.json_to_sheet(ordenadas.map(({fecha, matricula, nombre, grupo, tipo, descripcion}) => ({Fecha: fecha, Matrícula: matricula, Alumno: nombre, Grupo: grupo, Incidencia: tipo, Detalles: descripcion})));
             const libro = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(libro, hoja, "Reportes UTC");
             XLSX.writeFile(libro, `Incidencias_UTC_Bachillerato.xlsx`);
@@ -456,7 +444,9 @@
             doc.text("UNIVERSIDAD TRES CULTURAS - CONTROL DE INCIDENCIAS", 14, 20);
             
             const columnas = ["Fecha", "Matrícula", "Alumno", "Grupo", "Incidencia / Tipo", "Detalles"];
-            const filas = incidencias.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, i.descripcion]);
+            // Mantiene el orden alfabético también para el reporte pdf exportado
+            const ordenadas = [...incidencias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+            const filas = ordenadas.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, i.descripcion]);
 
             doc.autoTable({
                 startY: 28,
