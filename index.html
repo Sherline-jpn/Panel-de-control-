@@ -23,20 +23,25 @@
         .bg-utc-light { background-color: #f8fafc; }
     </style>
 </head>
-<body class="bg-utc-light text-gray-800 font-sans min-h-screen flex">
+<body class="bg-utc-light text-gray-800 font-sans min-h-screen flex flex-col md:flex-row">
 
-    <aside class="w-64 bg-utc-blue text-white flex flex-col justify-between hidden md:flex shadow-xl shrink-0">
-        <div class="p-6">
-            <div class="mb-8 flex flex-col items-center border-b border-white/10 pb-6">
+    <aside id="sidebar" class="w-full md:w-64 bg-utc-blue text-white flex flex-col justify-between shadow-xl shrink-0 z-50">
+        <div class="p-4 md:p-6">
+            <div class="flex md:flex-col items-center justify-between md:justify-center border-b border-white/10 pb-4 md:pb-6">
                 <div class="text-center font-black tracking-tighter leading-none select-none">
-                    <span class="text-4xl text-white">u</span><span class="text-4xl text-utc-orange">t</span><span class="text-4xl text-white">c</span>
+                    <span class="text-3xl md:text-4xl text-white">u</span><span class="text-3xl md:text-4xl text-utc-orange">t</span><span class="text-3xl md:text-4xl text-white">c</span>
                 </div>
-                <p class="text-xs font-light text-gray-300 mt-2 tracking-wide uppercase text-center">Universidad Tres Culturas</p>
-                <div class="mt-1 text-[10px] bg-utc-orange text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Bachillerato</div>
+                <div class="text-center hidden md:block">
+                    <p class="text-xs font-light text-gray-300 mt-2 tracking-wide uppercase">Universidad Tres Culturas</p>
+                    <div class="mt-1 text-[10px] bg-utc-orange text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest inline-block">Bachillerato</div>
+                </div>
+                <button onclick="toggleMenu()" class="block md:hidden p-2 text-white focus:outline-none focus:bg-white/10 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
             </div>
 
-            <nav class="space-y-2">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider pl-3 mb-2">Módulos</p>
+            <nav id="menu-items" class="hidden md:block space-y-2 mt-4 md:mt-6">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider pl-3 mb-2 hidden md:block">Módulos</p>
                 
                 <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg bg-utc-orange text-white transition-all shadow-md">
                     <span>Dashboard General</span>
@@ -52,102 +57,102 @@
             </nav>
         </div>
         
-        <div class="p-4 border-t border-white/10 bg-black/10 text-[11px] text-gray-400 text-center font-medium">
+        <div class="p-4 border-t border-white/10 bg-black/10 text-[11px] text-gray-400 text-center font-medium hidden md:block">
             Módulo de Control Interno
         </div>
     </aside>
 
     <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         
-        <header class="h-16 bg-white border-b border-gray-200 px-8 flex items-center justify-between shadow-sm">
-            <div class="w-80">
-                <input type="text" placeholder="Buscar por matrícula o alumno..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-utc-blue">
+        <header class="h-16 bg-white border-b border-gray-200 px-4 md:px-8 flex items-center justify-between shadow-sm">
+            <div class="w-48 md:w-80">
+                <input type="text" placeholder="Buscar por matrícula o alumno..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 md:px-4 py-1.5 text-xs md:text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-utc-blue">
             </div>
-            <div class="flex items-center gap-4">
-                <div class="text-right">
-                    <p class="text-sm font-bold text-utc-blue">Servicios Escolares UTC</p>
-                    <p class="text-xs text-gray-500 font-medium">Panel de Control Administrativo</p>
+            <div class="flex items-center gap-3 md:gap-4">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs md:text-sm font-bold text-utc-blue">Servicios Escolares UTC</p>
+                    <p class="text-[10px] md:text-xs text-gray-500 font-medium">Panel de Control Administrativo</p>
                 </div>
-                <div class="w-9 h-9 rounded-full bg-utc-orange text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                <div class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-utc-orange text-white flex items-center justify-center font-bold text-xs md:text-sm shadow-sm select-none">
                     UTC
                 </div>
             </div>
         </header>
 
-        <main class="flex-1 p-8">
+        <main class="flex-1 p-4 md:p-8">
 
             <section id="tab-dashboard" class="tab-content block space-y-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-utc-blue tracking-tight">Resumen Estadístico Semanal</h2>
-                    <p class="text-sm text-gray-500">Métricas acumuladas y distribución del comportamiento del alumnado.</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-utc-blue tracking-tight">Resumen Estadístico Semanal</h2>
+                    <p class="text-xs md:text-sm text-gray-500">Métricas acumuladas y distribución del comportamiento del alumnado.</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-blue">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total de Incidencias</p>
-                        <h3 id="kpi-total" class="text-3xl font-black text-utc-blue mt-1">0</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+                    <div class="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-blue">
+                        <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Total de Incidencias</p>
+                        <h3 id="kpi-total" class="text-xl md:text-3xl font-black text-utc-blue mt-1">0</h3>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-orange">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Académicas</p>
-                        <h3 id="kpi-academico" class="text-3xl font-black text-utc-orange mt-1">0</h3>
+                    <div class="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-orange">
+                        <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Académicas</p>
+                        <h3 id="kpi-academico" class="text-xl md:text-3xl font-black text-utc-orange mt-1">0</h3>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-amber-500">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Conductuales</p>
-                        <h3 id="kpi-conducta" class="text-3xl font-black text-amber-500 mt-1">0</h3>
+                    <div class="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-amber-500">
+                        <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Conductuales</p>
+                        <h3 id="kpi-conducta" class="text-xl md:text-3xl font-black text-amber-500 mt-1">0</h3>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-teal-600">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Emocionales</p>
-                        <h3 id="kpi-emocional" class="text-3xl font-black text-teal-600 mt-1">0</h3>
+                    <div class="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-teal-600">
+                        <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Emocionales</p>
+                        <h3 id="kpi-emocional" class="text-xl md:text-3xl font-black text-teal-600 mt-1">0</h3>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                        <h4 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Flujo Diario de Reportes</h4>
-                        <div class="h-64"><canvas id="chartFlujoSemanal"></canvas></div>
+                    <div class="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h4 class="text-[10px] md:text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Flujo Diario de Reportes</h4>
+                        <div class="h-48 md:h-64"><canvas id="chartFlujoSemanal"></canvas></div>
                     </div>
-                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                        <h4 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Distribución por Áreas de Atención</h4>
-                        <div class="h-64 flex justify-center"><canvas id="chartTipoIncidencia"></canvas></div>
+                    <div class="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h4 class="text-[10px] md:text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Distribución por Áreas de Atención</h4>
+                        <div class="h-48 md:h-64 flex justify-center"><canvas id="chartTipoIncidencia"></canvas></div>
                     </div>
                 </div>
             </section>
 
             <section id="tab-registro" class="tab-content hidden max-w-5xl mx-auto">
-                <div class="bg-white p-10 rounded-2xl border border-gray-200 shadow-xl">
-                    <div class="mb-8 border-b border-gray-100 pb-4">
-                        <h2 class="text-2xl font-extrabold text-utc-blue">Inscripción Formal de Incidencia</h2>
-                        <p class="text-sm text-gray-500 mt-1">Capture los datos del estudiante y seleccione detalladamente la categoría correspondiente del catálogo oficial.</p>
+                <div class="bg-white p-5 md:p-10 rounded-2xl border border-gray-200 shadow-xl">
+                    <div class="mb-6 md:mb-8 border-b border-gray-100 pb-4">
+                        <h2 class="text-xl md:text-2xl font-extrabold text-utc-blue">Inscripción Formal de Incidencia</h2>
+                        <p class="text-xs md:text-sm text-gray-500 mt-1">Capture los datos del estudiante y seleccione detalladamente la categoría correspondiente del catálogo oficial.</p>
                     </div>
                     
-                    <form id="form-incidencia" onsubmit="guardarIncidencia(event)" class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <form id="form-incidencia" onsubmit="guardarIncidencia(event)" class="space-y-4 md:space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                             <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Matrícula del Alumno</label>
-                                <input type="text" id="matricula" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
+                                <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Matrícula del Alumno</label>
+                                <input type="text" id="matricula" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Nombre Completo</label>
-                                <input type="text" id="nombre" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
+                                <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Nombre Completo</label>
+                                <input type="text" id="nombre" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                             <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Grupo / Cuatrimestre</label>
-                                <input type="text" id="grupo" placeholder="Ej. 401-X" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
+                                <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Grupo / Cuatrimestre</label>
+                                <input type="text" id="grupo" placeholder="Ej. 401-X" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
                             </div>
                             
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Tipo de incidencia</label>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <button type="button" onclick="selectCategoria('Académica')" id="cat-Académica" class="cat-btn py-3 px-4 text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
+                                <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Tipo de incidencia</label>
+                                <div class="grid grid-cols-3 gap-1.5 md:gap-2">
+                                    <button type="button" onclick="selectCategoria('Académica')" id="cat-Académica" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
                                         Académica
                                     </button>
-                                    <button type="button" onclick="selectCategoria('Conductual')" id="cat-Conductual" class="cat-btn py-3 px-4 text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
+                                    <button type="button" onclick="selectCategoria('Conductual')" id="cat-Conductual" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
                                         Conductual
                                     </button>
-                                    <button type="button" onclick="selectCategoria('Emocional')" id="cat-Emocional" class="cat-btn py-3 px-4 text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
+                                    <button type="button" onclick="selectCategoria('Emocional')" id="cat-Emocional" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
                                         Emocional
                                     </button>
                                 </div>
@@ -156,18 +161,18 @@
                         </div>
 
                         <div id="contenedor-subcategoria" class="hidden transition-all duration-300">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Seleccione la Causa o Situación Específica</label>
-                            <select id="subcategoria" required class="w-full bg-gray-50 border-2 border-utc-orange rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none bg-white">
-                                </select>
+                            <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Seleccione la Causa o Situación Específica</label>
+                            <select id="subcategoria" required class="w-full bg-gray-50 border-2 border-utc-orange rounded-lg px-3 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none bg-white">
+                            </select>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Anotaciones Complementarias o Hechos Redactados</label>
-                            <textarea id="descripcion" rows="4" required placeholder="Ingrese detalles o el contexto específico del suceso..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all resize-none"></textarea>
+                            <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Anotaciones Complementarias o Hechos Redactados</label>
+                            <textarea id="descripcion" rows="4" required placeholder="Ingrese detalles o el contexto específico del suceso..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all resize-none"></textarea>
                         </div>
 
-                        <div class="pt-4">
-                            <button type="submit" class="w-full bg-utc-blue hover:bg-[#143d73] text-white text-sm font-bold uppercase tracking-widest py-4 rounded-xl transition-all shadow-md">
+                        <div class="pt-2">
+                            <button type="submit" class="w-full bg-utc-blue hover:bg-[#143d73] text-white text-xs md:text-sm font-bold uppercase tracking-widest py-3 md:py-4 rounded-xl transition-all shadow-md">
                                 Registrar en Expediente General
                             </button>
                         </div>
@@ -176,35 +181,35 @@
             </section>
 
             <section id="tab-historial" class="tab-content hidden space-y-6">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                         <h2 class="text-xl font-bold text-utc-blue">Registros Almacenados</h2>
-                        <p class="text-sm text-gray-500">Historial centralizado descargable para auditorías y juntas académicas.</p>
+                        <p class="text-xs md:text-sm text-gray-500">Historial centralizado descargable para auditorías y juntas académicas.</p>
                     </div>
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm">
-                            Exportar Archivo Excel
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="exportarExcel()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">
+                            Exportar Excel
                         </button>
-                        <button onclick="exportarPDF()" class="bg-utc-orange hover:bg-[#b03f22] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm">
-                            Exportar Archivo PDF
+                        <button onclick="exportarPDF()" class="flex-1 sm:flex-none bg-utc-orange hover:bg-[#b03f22] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">
+                            Exportar PDF
                         </button>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-md">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 table-auto">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Fecha</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Matrícula</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Alumno</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Grupo</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Área / Tipo</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Hecho Reportado</th>
+                                <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Fecha</th>
+                                <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Matrícula</th>
+                                <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Alumno</th>
+                                <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Grupo</th>
+                                <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Área / Tipo</th>
+                                <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Hecho Reportado</th>
                             </tr>
                         </thead>
-                        <tbody id="tabla-cuerpo" class="divide-y divide-gray-100 text-sm text-gray-700 bg-white">
-                            </tbody>
+                        <tbody id="tabla-cuerpo" class="divide-y divide-gray-100 text-xs md:text-sm text-gray-700 bg-white">
+                        </tbody>
                     </table>
                 </div>
             </section>
@@ -213,49 +218,47 @@
     </div>
 
     <script>
-        // Catálogo formal de opciones extraídas exactamente de tu solicitud
         const opcionesCatalogo = {
-           "Académica": [
-    "Adeudo de extraordinarios",
-    "Bajo rendimiento académico",
-    "Falsificar justificantes",
-    "Inasistencias recurrentes",
-    "No poner atención en clase",
-    "No trabajar en clase"
-],
-"Conductual": [
-    "Agresiones físicas",
-    "Aventar objetos hacia la calle",
-    "Comer en clase",
-    "Consumir y/o portar sustancias ilícitas",
-    "Daño al inmueble",
-    "Falta de respeto al docente",
-    "Falta de respeto al personal administrativo",
-    "Grafiti en la pared",
-    "Grabaciones / fotos de otra persona sin autorización",
-    "Grosería hacia compañeros",
-    "Hostigamiento verbal",
-    "Jugar videojuegos en clase",
-    "No bajar a receso",
-    "No portar correctamente el uniforme",
-    "No sentarse en su lugar asignado",
-    "Posesión de objetos no permitidos",
-    "Quedarse dormido en clase",
-    "Salir del salón sin autorización",
-    "Tomar sin permiso pertenencias ajenas",
-    "Uso no autorizado de celular/audifonos"
-],
-"Emocional": [
-    "Canalización por conducta",
-    "Crisis de ansiedad",
-    "Mediación de conflictos entre alumnos",
-    "Orientación para el aprendizaje",
-    "Orientación psicoemocional",
-    "Seguimiento externo"
-]
+            "Académica": [
+                "Adeudo de extraordinarios",
+                "Bajo rendimiento académico",
+                "Falsificar justificantes",
+                "Inasistencias recurrentes",
+                "No poner atención en clase",
+                "No trabajar en clase"
+            ],
+            "Conductual": [
+                "Agresiones físicas",
+                "Aventar objetos hacia la calle",
+                "Comer en clase",
+                "Consumir y/o portar sustancias ilícitas",
+                "Daño al inmueble",
+                "Falta de respeto al docente",
+                "Falta de respeto al personal administrativo",
+                "Grafiti en la pared",
+                "Grabaciones / fotos de otra persona sin autorización",
+                "Grosería hacia compañeros",
+                "Hostigamiento verbal",
+                "Jugar videojuegos en clase",
+                "No bajar a receso",
+                "No portar correctamente el uniforme",
+                "No sentarse en su lugar asignado",
+                "Posesión de objetos no permitidos",
+                "Quedarse dormido en clase",
+                "Salir del salón sin autorización",
+                "Tomar sin permiso pertenencias ajenas",
+                "Uso no autorizado de celular/audifonos"
+            ],
+            "Emocional": [
+                "Canalización por conducta",
+                "Crisis de ansiedad",
+                "Mediación de conflictos entre alumnos",
+                "Orientación para el aprendizaje",
+                "Orientación psicoemocional",
+                "Seguimiento externo"
+            ]
         };
 
-        // Arreglo de almacenamiento principal
         let incidencias = JSON.parse(localStorage.getItem('incidencias_utc')) || [];
         let chartFlujo, chartTipo;
 
@@ -264,11 +267,15 @@
             procesarAnaliticas();
         });
 
-        // Manejo de la selección de las 3 categorías principales por botón
+        // Función JavaScript para abrir/cerrar el menú en teléfonos
+        function toggleMenu() {
+            const menu = document.getElementById('menu-items');
+            menu.classList.toggle('hidden');
+        }
+
         function selectCategoria(cat) {
             document.getElementById('categoria-seleccionada').value = cat;
             
-            // Estilos visuales activos para los botones
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.classList.remove('bg-utc-orange', 'text-white', 'border-utc-orange', 'bg-utc-blue', 'text-white', 'bg-teal-600');
                 btn.classList.add('bg-gray-50', 'text-gray-600');
@@ -281,7 +288,6 @@
             if(cat === 'Conductual') activeBtn.classList.add('bg-utc-blue', 'text-white', 'border-utc-blue');
             if(cat === 'Emocional') activeBtn.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
 
-            // Desplegar y llenar la barra selectora subordinada
             const contenedor = document.getElementById('contenedor-subcategoria');
             const selectSub = document.getElementById('subcategoria');
             selectSub.innerHTML = '<option value="">-- Seleccione una opción de la lista oficial --</option>';
@@ -306,6 +312,11 @@
             });
             document.getElementById(`btn-${tabId}`).classList.remove('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
             document.getElementById(`btn-${tabId}`).classList.add('bg-utc-orange', 'text-white', 'shadow-md');
+
+            // Cierra automáticamente el menú desplegable en celulares al cambiar de pestaña
+            if(window.innerWidth < 768) {
+                document.getElementById('menu-items').classList.add('hidden');
+            }
 
             if (tabId === 'dashboard') procesarAnaliticas();
         }
@@ -357,7 +368,6 @@
             if (total === 0) {
                 cuerpo.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No hay registros cargados actualmente.</td></tr>`;
             } else {
-                // SE AÑADIÓ LA LÓGICA DE ORDENAMIENTO ALFABÉTICO AQUÍ POR NOMBRE DEL ALUMNO
                 const incidenciasOrdenadas = [...incidencias].sort((a, b) => {
                     return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
                 });
@@ -365,12 +375,12 @@
                 incidenciasOrdenadas.forEach(item => {
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-medium">${item.fecha}</td>
-                        <td class="px-6 py-4 whitespace-nowrap font-bold text-utc-blue">${item.matricula}</td>
-                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${item.nombre}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">${item.grupo}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-xs font-bold ${item.eje==='Académica'?'text-utc-orange':item.eje==='Conductual'?'text-amber-600':'text-teal-600'}">${item.tipo}</td>
-                        <td class="px-6 py-4 max-w-xs truncate text-xs text-gray-500" title="${item.descripcion}">${item.descripcion}</td>
+                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-medium">${item.fecha}</td>
+                        <td class="px-4 md:px-6 py-4 whitespace-nowrap font-bold text-utc-blue">${item.matricula}</td>
+                        <td class="px-4 md:px-6 py-4 whitespace-nowrap font-medium text-gray-900">${item.nombre}</td>
+                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-gray-600">${item.grupo}</td>
+                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-xs font-bold ${item.eje==='Académica'?'text-utc-orange':item.eje==='Conductual'?'text-amber-600':'text-teal-600'}">${item.tipo}</td>
+                        <td class="px-4 md:px-6 py-4 max-w-xs truncate text-xs text-gray-500" title="${item.descripcion}">${item.descripcion}</td>
                     `;
                     cuerpo.appendChild(fila);
                 });
@@ -387,7 +397,7 @@
             chartFlujo = new Chart(ctxFlujo, {
                 type: 'line',
                 data: {
-                    labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'],
                     datasets: [{
                         label: 'Volumen',
                         data: [0, 0, 0, 0, 0],
@@ -420,14 +430,13 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
                 }
             });
         }
 
         function exportarExcel() {
             if (incidencias.length === 0) return alert('No hay datos registrados.');
-            // Mantiene el orden alfabético también para el reporte excel exportado
             const ordenadas = [...incidencias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
             const hoja = XLSX.utils.json_to_sheet(ordenadas.map(({fecha, matricula, nombre, grupo, tipo, descripcion}) => ({Fecha: fecha, Matrícula: matricula, Alumno: nombre, Grupo: grupo, Incidencia: tipo, Detalles: descripcion})));
             const libro = XLSX.utils.book_new();
@@ -444,7 +453,6 @@
             doc.text("UNIVERSIDAD TRES CULTURAS - CONTROL DE INCIDENCIAS", 14, 20);
             
             const columnas = ["Fecha", "Matrícula", "Alumno", "Grupo", "Incidencia / Tipo", "Detalles"];
-            // Mantiene el orden alfabético también para el reporte pdf exportado
             const ordenadas = [...incidencias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
             const filas = ordenadas.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, i.descripcion]);
 
