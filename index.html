@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Incidencias - UTC</title>
+    <!-- Tailwind CSS para el diseño institucional -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para analíticas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Librería para Exportar a Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Librerías para Exportar a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        /* Colores institucionales UTC basados en el logotipo oficial */
+        .bg-utc-blue { background-color: #0d2c54; }
+        .text-utc-blue { color: #0d2c54; }
+        .border-utc-blue { border-color: #0d2c54; }
+        
+        .bg-utc-orange { background-color: #c94a29; }
+        .text-utc-orange { color: #c94a29; }
+        .border-utc-orange { border-color: #c94a29; }
+        
+        .bg-utc-light { background-color: #f8fafc; }
+    </style>
+</head>
+<body class="bg-utc-light text-gray-800 font-sans min-h-screen flex">
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="w-64 bg-utc-blue text-white flex flex-col justify-between hidden md:flex shadow-xl shrink-0">
+        <div class="p-6">
+            <!-- Logotipo Institucional UTC -->
+            <div class="mb-8 flex flex-col items-center border-b border-white/10 pb-6">
+                <div class="text-center font-black tracking-tighter leading-none select-none">
+                    <span class="text-4xl text-white">u</span><span class="text-4xl text-utc-orange">t</span><span class="text-4xl text-white">c</span>
+                </div>
+                <p class="text-xs font-light text-gray-300 mt-2 tracking-wide uppercase text-center">Universidad Tres Culturas</p>
+                <div class="mt-1 text-[10px] bg-utc-orange text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Bachillerato</div>
+            </div>
+
+            <!-- Menú de Navegación -->
+            <nav class="space-y-2">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider pl-3 mb-2">Módulos</p>
+                
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg bg-utc-orange text-white transition-all shadow-md">
+                    <span>Dashboard General</span>
+                </button>
+                
+                <button onclick="switchTab('registro')" id="btn-registro" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                    <span>Registrar Incidencia</span>
+                </button>
+                
+                <button onclick="switchTab('historial')" id="btn-historial" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                    <span>Historial de Alumnos</span>
+                </button>
+            </nav>
+        </div>
+        
+        <div class="p-4 border-t border-white/10 bg-black/10 text-[11px] text-gray-400 text-center font-medium">
+            Módulo de Control Interno
+        </div>
+    </aside>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+        
+        <!-- BARRA SUPERIOR -->
+        <header class="h-16 bg-white border-b border-gray-200 px-8 flex items-center justify-between shadow-sm">
+            <div class="w-80">
+                <input type="text" placeholder="Buscar por matrícula o alumno..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-utc-blue">
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="text-sm font-bold text-utc-blue">Servicios Escolares UTC</p>
+                    <p class="text-xs text-gray-500 font-medium">Panel de Control Administrativo</p>
+                </div>
+                <div class="w-9 h-9 rounded-full bg-utc-orange text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                    UTC
+                </div>
+            </div>
+        </header>
+
+        <!-- ÁREA DE CONTENIDO DINÁMICO -->
+        <main class="flex-1 p-8">
+
+            <!-- SECCIÓN 1: DASHBOARD (ESTADÍSTICAS) -->
+            <section id="tab-dashboard" class="tab-content block space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-utc-blue tracking-tight">Resumen Estadístico Semanal</h2>
+                    <p class="text-sm text-gray-500">Métricas acumuladas y distribución del comportamiento del alumnado.</p>
+                </div>
+
+                <!-- Tarjetas KPI -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-blue">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total de Incidencias</p>
+                        <h3 id="kpi-total" class="text-3xl font-black text-utc-blue mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-orange">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Académicas</p>
+                        <h3 id="kpi-academico" class="text-3xl font-black text-utc-orange mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-amber-500">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Conductuales</p>
+                        <h3 id="kpi-conducta" class="text-3xl font-black text-amber-500 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-teal-600">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Emocionales</p>
+                        <h3 id="kpi-emocional" class="text-3xl font-black text-teal-600 mt-1">0</h3>
+                    </div>
+                </div>
+
+                <!-- Gráficas -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h4 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Flujo Diario de Reportes</h4>
+                        <div class="h-64"><canvas id="chartFlujoSemanal"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h4 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Distribución por Áreas de Atención</h4>
+                        <div class="h-64 flex justify-center"><canvas id="chartTipoIncidencia"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2: FORMULARIO DE REGISTRO AMPLIO -->
+            <section id="tab-registro" class="tab-content hidden max-w-5xl mx-auto">
+                <div class="bg-white p-10 rounded-2xl border border-gray-200 shadow-xl">
+                    <div class="mb-8 border-b border-gray-100 pb-4">
+                        <h2 class="text-2xl font-extrabold text-utc-blue">Inscripción Formal de Incidencia</h2>
+                        <p class="text-sm text-gray-500 mt-1">Capture los datos del estudiante y seleccione detalladamente la categoría correspondiente del catálogo oficial.</p>
+                    </div>
+                    
+                    <form id="form-incidencia" onsubmit="guardarIncidencia(event)" class="space-y-6">
+                        <!-- Bloque de datos ampliado -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Matrícula del Alumno</label>
+                                <input type="text" id="matricula" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Nombre Completo</label>
+                                <input type="text" id="nombre" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Grupo / Cuatrimestre</label>
+                                <input type="text" id="grupo" placeholder="Ej. 401-X" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
+                            </div>
+                            
+                            <!-- NUEVA SELECTOR TRIPLE DE BOTONES CATEGÓRICOS -->
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Eje o Categoría de la Incidencia</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button type="button" onclick="selectCategoria('Académica')" id="cat-Académica" class="cat-btn py-3 px-4 text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
+                                        Académica
+                                    </button>
+                                    <button type="button" onclick="selectCategoria('Conductual')" id="cat-Conductual" class="cat-btn py-3 px-4 text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
+                                        Conductual
+                                    </button>
+                                    <button type="button" onclick="selectCategoria('Emocional')" id="cat-Emocional" class="cat-btn py-3 px-4 text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
+                                        Emocional
+                                    </button>
+                                </div>
+                                <input type="hidden" id="categoria-seleccionada" required>
+                            </div>
+                        </div>
+
+                        <!-- DESPLEGABLE DINÁMICO DE SUBCATEGORÍAS -->
+                        <div id="contenedor-subcategoria" class="hidden transition-all duration-300">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Seleccione la Causa o Situación Específica</label>
+                            <select id="subcategoria" required class="w-full bg-gray-50 border-2 border-utc-orange rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none bg-white">
+                                <!-- Elementos inyectados por JavaScript -->
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-utc-blue mb-2">Anotaciones Complementarias o Hechos Redactados</label>
+                            <textarea id="descripcion" rows="4" required placeholder="Ingrese detalles o el contexto específico del suceso..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all resize-none"></textarea>
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit" class="w-full bg-utc-blue hover:bg-[#143d73] text-white text-sm font-bold uppercase tracking-widest py-4 rounded-xl transition-all shadow-md">
+                                Registrar en Expediente General
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 3: HISTORIAL -->
+            <section id="tab-historial" class="tab-content hidden space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-utc-blue">Registros Almacenados</h2>
+                        <p class="text-sm text-gray-500">Historial centralizado descargable para auditorías y juntas académicas.</p>
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm">
+                            Exportar Archivo Excel
+                        </button>
+                        <button onclick="exportarPDF()" class="bg-utc-orange hover:bg-[#b03f22] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm">
+                            Exportar Archivo PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-md">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Fecha</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Matrícula</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Alumno</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Grupo</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Área / Tipo</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Hecho Reportado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-cuerpo" class="divide-y divide-gray-100 text-sm text-gray-700 bg-white">
+                            <!-- Inyección dinámica -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- CONTROLADORES Y LÓGICA DE NEGOCIO -->
+    <script>
+        // Catálogo formal de opciones extraídas exactamente de tu solicitud
+        const opcionesCatalogo = {
+            "Académica": [
+                "No poner atención en clase",
+                "Bajo rendimiento académico",
+                "Inasistencias recurrentes",
+                "Adeudo de extraordinarios",
+                "No trabajar en clase",
+                "Falsificar justificantes"
+            ],
+            "Conductual": [
+                "Falta de respeto al docente",
+                "Grafiti en la pared",
+                "No portar correctamente el uniforme",
+                "No sentarse en su lugar asignado",
+                "Daño al inmueble",
+                "Comer en clase",
+                "Consumir y/o portar sustancias ilícitas",
+                "Agresiones físicas",
+                "Posesión de objetos no permitidos",
+                "Grabaciones / fotos de otra persona sin autorización",
+                "Salir del salón sin autorización",
+                "Uso no autorizado de celular",
+                "Quedarse dormido en clase",
+                "Grosería hacia compañeros",
+                "Hostigamiento verbal",
+                "Falta de respeto al personal administrativo",
+                "Jugar videojuegos en clase",
+                "Aventar objetos hacia la calle",
+                "Tomar sin permiso pertenencias ajenas",
+                "No bajar a receso"
+            ],
+            "Emocional": [
+                "Crisis de ansiedad",
+                "Canalización por conducta",
+                "Mediación de conflictos entre alumnos",
+                "Orientación psicoemocional",
+                "Orientación para el aprendizaje"
+            ]
+        };
+
+        // Arreglo de almacenamiento principal
+        let incidencias = JSON.parse(localStorage.getItem('incidencias_utc')) || [];
+        let chartFlujo, chartTipo;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarGraficas();
+            procesarAnaliticas();
+        });
+
+        // Manejo de la selección de las 3 categorías principales por botón
+        function selectCategoria(cat) {
+            document.getElementById('categoria-seleccionada').value = cat;
+            
+            // Estilos visuales activos para los botones
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-utc-orange', 'text-white', 'border-utc-orange', 'bg-utc-blue', 'text-white', 'bg-teal-600');
+                btn.classList.add('bg-gray-50', 'text-gray-600');
+            });
+
+            const activeBtn = document.getElementById(`cat-${cat}`);
+            activeBtn.classList.remove('bg-gray-50', 'text-gray-600');
+            
+            if(cat === 'Académica') activeBtn.classList.add('bg-utc-orange', 'text-white', 'border-utc-orange');
+            if(cat === 'Conductual') activeBtn.classList.add('bg-utc-blue', 'text-white', 'border-utc-blue');
+            if(cat === 'Emocional') activeBtn.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
+
+            // Desplegar y llenar la barra selectora subordinada
+            const contenedor = document.getElementById('contenedor-subcategoria');
+            const selectSub = document.getElementById('subcategoria');
+            selectSub.innerHTML = '<option value="">-- Seleccione una opción de la lista oficial --</option>';
+            
+            opcionesCatalogo[cat].forEach(opc => {
+                const optEl = document.createElement('option');
+                optEl.value = opc;
+                optEl.textContent = opc;
+                selectSub.appendChild(optEl);
+            });
+            
+            contenedor.classList.remove('hidden');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-utc-orange', 'text-white', 'shadow-md');
+                el.classList.add('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
+            });
+            document.getElementById(`btn-${tabId}`).classList.remove('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
+            document.getElementById(`btn-${tabId}`).classList.add('bg-utc-orange', 'text-white', 'shadow-md');
+
+            if (tabId === 'dashboard') procesarAnaliticas();
+        }
+
+        function guardarIncidencia(e) {
+            e.preventDefault();
+            const cat = document.getElementById('categoria-seleccionada').value;
+            if(!cat) return alert('Por favor seleccione uno de los 3 botones de categoría.');
+
+            const nuevaIncidencia = {
+                fecha: new Date().toLocaleDateString('es-MX'),
+                matricula: document.getElementById('matricula').value.trim(),
+                nombre: document.getElementById('nombre').value.trim(),
+                grupo: document.getElementById('grupo').value.trim(),
+                tipo: `${cat} - ${document.getElementById('subcategoria').value}`,
+                descripcion: document.getElementById('descripcion').value.trim(),
+                eje: cat
+            };
+
+            incidencias.push(nuevaIncidencia);
+            localStorage.setItem('incidencias_utc', JSON.stringify(incidencias));
+            
+            document.getElementById('form-incidencia').reset();
+            document.getElementById('contenedor-subcategoria').classList.add('hidden');
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-utc-orange', 'text-white', 'bg-utc-blue', 'bg-teal-600');
+                btn.classList.add('bg-gray-50', 'text-gray-600');
+            });
+            document.getElementById('categoria-seleccionada').value = "";
+
+            alert('Registro archivado exitosamente.');
+            switchTab('dashboard');
+        }
+
+        function procesarAnaliticas() {
+            const total = incidencias.length;
+            const academico = incidencias.filter(i => i.eje === 'Académica').length;
+            const conducta = incidencias.filter(i => i.eje === 'Conductual').length;
+            const emocional = incidencias.filter(i => i.eje === 'Emocional').length;
+
+            document.getElementById('kpi-total').innerText = total;
+            document.getElementById('kpi-academico').innerText = academico;
+            document.getElementById('kpi-conducta').innerText = conducta;
+            document.getElementById('kpi-emocional').innerText = emocional;
+
+            const cuerpo = document.getElementById('tabla-cuerpo');
+            cuerpo.innerHTML = '';
+            if (total === 0) {
+                cuerpo.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No hay registros cargados actualmente.</td></tr>`;
+            } else {
+                incidencias.forEach(item => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-medium">${item.fecha}</td>
+                        <td class="px-6 py-4 whitespace-nowrap font-bold text-utc-blue">${item.matricula}</td>
+                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${item.nombre}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">${item.grupo}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-xs font-bold ${item.eje==='Académica'?'text-utc-orange':item.eje==='Conductual'?'text-amber-600':'text-teal-600'}">${item.tipo}</td>
+                        <td class="px-6 py-4 max-w-xs truncate text-xs text-gray-500" title="${item.descripcion}">${item.descripcion}</td>
+                    `;
+                    cuerpo.appendChild(fila);
+                });
+            }
+
+            chartTipo.data.datasets[0].data = [academico, conducta, emocional];
+            chartFlujo.data.datasets[0].data = [academico, total, conducta, emocional, total / 2];
+            chartTipo.update();
+            chartFlujo.update();
+        }
+
+        function inicializarGraficas() {
+            const ctxFlujo = document.getElementById('chartFlujoSemanal').getContext('2d');
+            chartFlujo = new Chart(ctxFlujo, {
+                type: 'line',
+                data: {
+                    labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
+                    datasets: [{
+                        label: 'Volumen',
+                        data: [0, 0, 0, 0, 0],
+                        borderColor: '#c94a29',
+                        backgroundColor: 'rgba(201, 74, 41, 0.05)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { ticks: { color: '#9ca3af' } }, x: { ticks: { color: '#9ca3af' } } }
+                }
+            });
+
+            const ctxTipo = document.getElementById('chartTipoIncidencia').getContext('2d');
+            chartTipo = new Chart(ctxTipo, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Académica', 'Conductual', 'Emocional'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#c94a29', '#0d2c54', '#0d9488'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+                }
+            });
+        }
+
+        function exportarExcel() {
+            if (incidencias.length === 0) return alert('No hay datos registrados.');
+            const hoja = XLSX.utils.json_to_sheet(incidencias.map(({fecha, matricula, nombre, grupo, tipo, descripcion}) => ({Fecha: fecha, Matrícula: matricula, Alumno: nombre, Grupo: grupo, Incidencia: tipo, Detalles: descripcion})));
+            const libro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(libro, hoja, "Reportes UTC");
+            XLSX.writeFile(libro, `Incidencias_UTC_Bachillerato.xlsx`);
+        }
+
+        function exportarPDF() {
+            if (incidencias.length === 0) return alert('No hay datos registrados.');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(16);
+            doc.setTextColor(13, 44, 84);
+            doc.text("UNIVERSIDAD TRES CULTURAS - CONTROL DE INCIDENCIAS", 14, 20);
+            
+            const columnas = ["Fecha", "Matrícula", "Alumno", "Grupo", "Incidencia / Tipo", "Detalles"];
+            const filas = incidencias.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, i.descripcion]);
+
+            doc.autoTable({
+                startY: 28,
+                head: [columnas],
+                body: filas,
+                headStyles: { fillColor: [13, 44, 84] },
+                styles: { fontSize: 8 }
+            });
+            doc.save(`Expediente_Incidencias_UTC.pdf`);
+        }
+    </script>
+</body>
+</html>
