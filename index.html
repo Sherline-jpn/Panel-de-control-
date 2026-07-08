@@ -11,21 +11,42 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* Colores institucionales UTC basados en el logotipo oficial */
         .bg-utc-blue { background-color: #0d2c54; }
         .text-utc-blue { color: #0d2c54; }
         .border-utc-blue { border-color: #0d2c54; }
-        
         .bg-utc-orange { background-color: #c94a29; }
         .text-utc-orange { color: #c94a29; }
         .border-utc-orange { border-color: #c94a29; }
-        
         .bg-utc-light { background-color: #f8fafc; }
     </style>
 </head>
 <body class="bg-utc-light text-gray-800 font-sans min-h-screen flex flex-col md:flex-row">
 
-    <aside id="sidebar" class="w-full md:w-64 bg-utc-blue text-white flex flex-col justify-between shadow-xl shrink-0 z-50">
+    <div id="pantalla-login" class="fixed inset-0 bg-utc-blue z-[100] flex items-center justify-center p-4">
+        <div class="bg-white p-6 md:p-10 rounded-2xl shadow-2xl max-w-sm w-full space-y-6">
+            <div class="text-center">
+                <div class="font-black tracking-tighter leading-none select-none text-3xl">
+                    <span class="text-utc-blue">u</span><span class="text-utc-orange">t</span><span class="text-utc-blue">c</span>
+                </div>
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mt-2">Control de Incidencias</p>
+            </div>
+            <form onsubmit="autenticarUsuario(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-utc-blue mb-1">Usuario</label>
+                    <input type="text" id="login-user" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-utc-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-utc-blue mb-1">Contraseña</label>
+                    <input type="password" id="login-pass" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-utc-blue">
+                </div>
+                <button type="submit" class="w-full bg-utc-orange text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow-md hover:bg-[#b03f22] transition-all">
+                    Ingresar al Sistema
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <aside id="sidebar" class="w-full md:w-64 bg-utc-blue text-white flex flex-col justify-between shadow-xl shrink-0 z-50 hidden">
         <div class="p-4 md:p-6">
             <div class="flex md:flex-col items-center justify-between md:justify-center border-b border-white/10 pb-4 md:pb-6">
                 <div class="text-center font-black tracking-tighter leading-none select-none">
@@ -41,55 +62,61 @@
             </div>
 
             <nav id="menu-items" class="hidden md:block space-y-2 mt-4 md:mt-6">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider pl-3 mb-2 hidden md:block">Módulos</p>
-                
                 <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg bg-utc-orange text-white transition-all shadow-md">
                     <span>Dashboard General</span>
                 </button>
-                
                 <button onclick="switchTab('registro')" id="btn-registro" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-all">
                     <span>Registrar Incidencia</span>
                 </button>
-                
                 <button onclick="switchTab('historial')" id="btn-historial" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-all">
                     <span>Historial de Alumnos</span>
                 </button>
+                <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-red-400 hover:bg-red-500/10 transition-all pt-8 border-t border-white/5">
+                    <span>Cerrar Sesión</span>
+                </button>
             </nav>
         </div>
-        
-        <div class="p-4 border-t border-white/10 bg-black/10 text-[11px] text-gray-400 text-center font-medium hidden md:block">
-            Módulo de Control Interno
+        <div id="user-tag" class="p-4 border-t border-white/10 bg-black/10 text-[11px] text-gray-300 text-center font-medium hidden md:block">
+            Sesión: -
         </div>
     </aside>
 
     <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
-        
         <header class="h-16 bg-white border-b border-gray-200 px-4 md:px-8 flex items-center justify-between shadow-sm">
             <div class="w-48 md:w-80">
-                <input type="text" placeholder="Buscar por matrícula o alumno..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 md:px-4 py-1.5 text-xs md:text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-utc-blue">
+                <input type="text" id="buscador-global" oninput="filtrarPorBuscador()" placeholder="Buscar por matrícula o alumno..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 md:px-4 py-1.5 text-xs md:text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-utc-blue">
             </div>
             <div class="flex items-center gap-3 md:gap-4">
                 <div class="text-right hidden sm:block">
                     <p class="text-xs md:text-sm font-bold text-utc-blue">Servicios Escolares UTC</p>
-                    <p class="text-[10px] md:text-xs text-gray-500 font-medium">Panel de Control Administrativo</p>
+                    <p id="rol-header" class="text-[10px] md:text-xs text-gray-500 font-medium">Operador</p>
                 </div>
-                <div class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-utc-orange text-white flex items-center justify-center font-bold text-xs md:text-sm shadow-sm select-none">
-                    UTC
-                </div>
+                <div class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-utc-orange text-white flex items-center justify-center font-bold text-xs md:text-sm shadow-sm">UTC</div>
             </div>
         </header>
 
         <main class="flex-1 p-4 md:p-8">
-
             <section id="tab-dashboard" class="tab-content block space-y-6">
-                <div>
-                    <h2 class="text-xl md:text-2xl font-bold text-utc-blue tracking-tight">Resumen Estadístico Semanal</h2>
-                    <p class="text-xs md:text-sm text-gray-500">Métricas acumuladas y distribución del comportamiento del alumnado.</p>
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-utc-blue tracking-tight">Analíticas Avanzadas de Convivencia</h2>
+                        <p class="text-xs md:text-sm text-gray-500">Métricas acumuladas configurables por escalas de tiempo o alumno.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <select id="filtro-tiempo" onchange="procesarAnaliticas()" class="bg-gray-50 border border-gray-300 text-xs rounded-lg px-3 py-2 text-gray-700 focus:outline-none">
+                            <option value="todo">Ver Todo el Historial</option>
+                            <option value="semana">Esta Semana (Últimos 7 días)</option>
+                            <option value="mes">Este Mes (Últimos 30 días)</option>
+                        </select>
+                        <select id="filtro-alumno" onchange="procesarAnaliticas()" class="bg-gray-50 border border-gray-300 text-xs rounded-lg px-3 py-2 text-gray-700 focus:outline-none max-w-xs">
+                            <option value="todos">Todos los Alumnos</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
                     <div class="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-blue">
-                        <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Total de Incidencias</p>
+                        <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Incidencias Filtradas</p>
                         <h3 id="kpi-total" class="text-xl md:text-3xl font-black text-utc-blue mt-1">0</h3>
                     </div>
                     <div class="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-utc-orange">
@@ -108,11 +135,11 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm">
-                        <h4 class="text-[10px] md:text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Flujo Diario de Reportes</h4>
+                        <h4 class="text-[10px] md:text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Flujo Cronológico Ajustado</h4>
                         <div class="h-48 md:h-64"><canvas id="chartFlujoSemanal"></canvas></div>
                     </div>
                     <div class="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm">
-                        <h4 class="text-[10px] md:text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Distribución por Áreas de Atención</h4>
+                        <h4 class="text-[10px] md:text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Ejes Críticos de Atención</h4>
                         <div class="h-48 md:h-64 flex justify-center"><canvas id="chartTipoIncidencia"></canvas></div>
                     </div>
                 </div>
@@ -122,9 +149,8 @@
                 <div class="bg-white p-5 md:p-10 rounded-2xl border border-gray-200 shadow-xl">
                     <div class="mb-6 md:mb-8 border-b border-gray-100 pb-4">
                         <h2 class="text-xl md:text-2xl font-extrabold text-utc-blue">Inscripción Formal de Incidencia</h2>
-                        <p class="text-xs md:text-sm text-gray-500 mt-1">Capture los datos del estudiante y seleccione detalladamente la categoría correspondiente del catálogo oficial.</p>
+                        <p class="text-xs md:text-sm text-gray-500 mt-1">Capture los datos del estudiante.</p>
                     </div>
-                    
                     <form id="form-incidencia" onsubmit="guardarIncidencia(event)" class="space-y-4 md:space-y-6">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                             <div>
@@ -136,45 +162,31 @@
                                 <input type="text" id="nombre" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
                             </div>
                         </div>
-
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                             <div>
                                 <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Grupo / Cuatrimestre</label>
                                 <input type="text" id="grupo" placeholder="Ej. 401-X" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all">
                             </div>
-                            
                             <div class="md:col-span-2">
                                 <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Tipo de incidencia</label>
                                 <div class="grid grid-cols-3 gap-1.5 md:gap-2">
-                                    <button type="button" onclick="selectCategoria('Académica')" id="cat-Académica" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
-                                        Académica
-                                    </button>
-                                    <button type="button" onclick="selectCategoria('Conductual')" id="cat-Conductual" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
-                                        Conductual
-                                    </button>
-                                    <button type="button" onclick="selectCategoria('Emocional')" id="cat-Emocional" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">
-                                        Emocional
-                                    </button>
+                                    <button type="button" onclick="selectCategoria('Académica')" id="cat-Académica" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">Académica</button>
+                                    <button type="button" onclick="selectCategoria('Conductual')" id="cat-Conductual" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">Conductual</button>
+                                    <button type="button" onclick="selectCategoria('Emocional')" id="cat-Emocional" class="cat-btn py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm font-bold border rounded-lg transition-all text-gray-600 bg-gray-50 hover:bg-gray-100">Emocional</button>
                                 </div>
                                 <input type="hidden" id="categoria-seleccionada" required>
                             </div>
                         </div>
-
                         <div id="contenedor-subcategoria" class="hidden transition-all duration-300">
-                            <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Seleccione la Causa o Situación Específica</label>
-                            <select id="subcategoria" required class="w-full bg-gray-50 border-2 border-utc-orange rounded-lg px-3 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none bg-white">
-                            </select>
+                            <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Seleccione la Causa Específica</label>
+                            <select id="subcategoria" required class="w-full bg-gray-50 border-2 border-utc-orange rounded-lg px-3 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none bg-white"></select>
                         </div>
-
                         <div>
-                            <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Anotaciones Complementarias o Hechos Redactados</label>
-                            <textarea id="descripcion" rows="4" required placeholder="Ingrese detalles o el contexto específico del suceso..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all resize-none"></textarea>
+                            <label class="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-utc-blue mb-1 md:mb-2">Anotaciones Complementarias</label>
+                            <textarea id="descripcion" rows="4" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 md:py-3 text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-utc-blue/20 focus:border-utc-blue transition-all resize-none"></textarea>
                         </div>
-
                         <div class="pt-2">
-                            <button type="submit" class="w-full bg-utc-blue hover:bg-[#143d73] text-white text-xs md:text-sm font-bold uppercase tracking-widest py-3 md:py-4 rounded-xl transition-all shadow-md">
-                                Registrar en Expediente General
-                            </button>
+                            <button type="submit" class="w-full bg-utc-blue hover:bg-[#143d73] text-white text-xs md:text-sm font-bold uppercase tracking-widest py-3 md:py-4 rounded-xl transition-all shadow-md">Registrar en Expediente General</button>
                         </div>
                     </form>
                 </div>
@@ -184,15 +196,11 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                         <h2 class="text-xl font-bold text-utc-blue">Registros Almacenados</h2>
-                        <p class="text-xs md:text-sm text-gray-500">Historial centralizado descargable para auditorías y juntas académicas.</p>
+                        <p class="text-xs md:text-sm text-gray-500">Historial centralizado y base de datos.</p>
                     </div>
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <button onclick="exportarExcel()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">
-                            Exportar Excel
-                        </button>
-                        <button onclick="exportarPDF()" class="flex-1 sm:flex-none bg-utc-orange hover:bg-[#b03f22] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">
-                            Exportar PDF
-                        </button>
+                    <div id="zona-exportar" class="flex gap-2 w-full sm:w-auto hidden">
+                        <button onclick="exportarExcel()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">Exportar Excel</button>
+                        <button onclick="exportarPDF()" class="flex-1 sm:flex-none bg-utc-orange hover:bg-[#b03f22] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">Exportar PDF</button>
                     </div>
                 </div>
 
@@ -205,135 +213,134 @@
                                 <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Alumno</th>
                                 <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Grupo</th>
                                 <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Área / Tipo</th>
+                                <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Registró</th>
                                 <th class="px-4 md:px-6 py-4 text-left text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Hecho Reportado</th>
                             </tr>
                         </thead>
-                        <tbody id="tabla-cuerpo" class="divide-y divide-gray-100 text-xs md:text-sm text-gray-700 bg-white">
-                        </tbody>
+                        <tbody id="tabla-cuerpo" class="divide-y divide-gray-100 text-xs md:text-sm text-gray-700 bg-white"></tbody>
                     </table>
                 </div>
             </section>
-
         </main>
     </div>
 
     <script>
-        const opcionesCatalogo = {
-            "Académica": [
-                "Adeudo de extraordinarios",
-                "Bajo rendimiento académico",
-                "Falsificar justificantes",
-                "Inasistencias recurrentes",
-                "No poner atención en clase",
-                "No trabajar en clase"
-            ],
-            "Conductual": [
-                "Agresiones físicas",
-                "Aventar objetos hacia la calle",
-                "Comer en clase",
-                "Consumir y/o portar sustancias ilícitas",
-                "Daño al inmueble",
-                "Falta de respeto al docente",
-                "Falta de respeto al personal administrativo",
-                "Grafiti en la pared",
-                "Grabaciones / fotos de otra persona sin autorización",
-                "Grosería hacia compañeros",
-                "Hostigamiento verbal",
-                "Jugar videojuegos en clase",
-                "No bajar a receso",
-                "No portar correctamente el uniforme",
-                "No sentarse en su lugar asignado",
-                "Posesión de objetos no permitidos",
-                "Quedarse dormido en clase",
-                "Salir del salón sin autorización",
-                "Tomar sin permiso pertenencias ajenas",
-                "Uso no autorizado de celular/audifonos"
-            ],
-            "Emocional": [
-                "Canalización por conducta",
-                "Crisis de ansiedad",
-                "Mediación de conflictos entre alumnos",
-                "Orientación para el aprendizaje",
-                "Orientación psicoemocional",
-                "Seguimiento externo"
-            ]
+        // CONFIGURACIÓN DE CUENTAS (1 ADMIN + 5 USUARIOS OPERADORES)
+        const CATALOGO_USUARIOS = {
+            "admin": { pass: "UTCadmin2026", rol: "Administrador" },
+            "user1": { pass: "UTCusr1", rol: "Operador" },
+            "user2": { pass: "UTCusr2", rol: "Operador" },
+            "user3": { pass: "UTCusr3", rol: "Operador" },
+            "user4": { pass: "UTCusr4", rol: "Operador" },
+            "user5": { pass: "UTCusr5", rol: "Operador" }
         };
 
+        const opcionesCatalogo = {
+            "Académica": ["Adeudo de extraordinarios", "Bajo rendimiento académico", "Falsificar justificantes", "Inasistencias recurrentes", "No poner atención en clase", "No trabajar en clase"],
+            "Conductual": ["Agresiones físicas", "Aventar objetos hacia la calle", "Comer en clase", "Consumir y/o portar sustancias ilícitas", "Daño al inmueble", "Falta de respeto al docente", "Falta de respeto al personal administrativo", "Grafiti en la pared", "Grabaciones / fotos de otra persona sin autorización", "Grosería hacia compañeros", "Hostigamiento verbal", "Jugar videojuegos en clase", "No bajar a receso", "No portar correctamente el uniforme", "No sentarse en su lugar asignado", "Posesión de objetos no permitidos", "Quedarse dormido en clase", "Salir del salón sin autorización", "Tomar sin permiso pertenencias ajenas", "Uso no autorizado de celular/audifonos"],
+            "Emocional": ["Canalización por conducta", "Crisis de ansiedad", "Mediación de conflictos entre alumnos", "Orientación para el aprendizaje", "Orientación psicoemocional", "Seguimiento externo"]
+        };
+
+        let usuarioActivo = null;
+        let rolActivo = null;
         let incidencias = JSON.parse(localStorage.getItem('incidencias_utc')) || [];
         let chartFlujo, chartTipo;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            inicializarGraficas();
-            procesarAnaliticas();
-        });
+        // AUTENTICACIÓN
+        function autenticarUsuario(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value;
 
-        // Función JavaScript para abrir/cerrar el menú en teléfonos
+            if (CATALOGO_USUARIOS[u] && CATALOGO_USUARIOS[u].pass === p) {
+                usuarioActivo = u;
+                rolActivo = CATALOGO_USUARIOS[u].rol;
+                
+                document.getElementById('pantalla-login').classList.add('hidden');
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('user-tag').innerText = `Sesión: ${u.toUpperCase()} (${rolActivo})`;
+                document.getElementById('rol-header').innerText = rolActivo;
+
+                // Restricción de privilegios para los 5 operadores
+                const zonaExportar = document.getElementById('zona-exportar');
+                if (rolActivo === "Administrador") {
+                    zonaExportar.classList.remove('hidden');
+                } else {
+                    zonaExportar.classList.add('hidden');
+                }
+
+                inicializarGraficas();
+                actualizarSelectorAlumnos();
+                procesarAnaliticas();
+            } else {
+                alert("Credenciales inválidas para el control de incidencias UTC.");
+            }
+        }
+
+        function cerrarSesion() {
+            usuarioActivo = null;
+            rolActivo = null;
+            document.getElementById('form-incidencia').reset();
+            document.getElementById('login-user').value = "";
+            document.getElementById('login-pass').value = "";
+            document.getElementById('pantalla-login').classList.remove('hidden');
+            document.getElementById('sidebar').classList.add('hidden');
+        }
+
         function toggleMenu() {
-            const menu = document.getElementById('menu-items');
-            menu.classList.toggle('hidden');
+            document.getElementById('menu-items').classList.toggle('hidden');
         }
 
         function selectCategoria(cat) {
             document.getElementById('categoria-seleccionada').value = cat;
-            
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.classList.remove('bg-utc-orange', 'text-white', 'border-utc-orange', 'bg-utc-blue', 'text-white', 'bg-teal-600');
                 btn.classList.add('bg-gray-50', 'text-gray-600');
             });
-
             const activeBtn = document.getElementById(`cat-${cat}`);
             activeBtn.classList.remove('bg-gray-50', 'text-gray-600');
-            
             if(cat === 'Académica') activeBtn.classList.add('bg-utc-orange', 'text-white', 'border-utc-orange');
             if(cat === 'Conductual') activeBtn.classList.add('bg-utc-blue', 'text-white', 'border-utc-blue');
             if(cat === 'Emocional') activeBtn.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
 
             const contenedor = document.getElementById('contenedor-subcategoria');
             const selectSub = document.getElementById('subcategoria');
-            selectSub.innerHTML = '<option value="">-- Seleccione una opción de la lista oficial --</option>';
-            
+            selectSub.innerHTML = '<option value="">-- Seleccione la causa --</option>';
             opcionesCatalogo[cat].forEach(opc => {
                 const optEl = document.createElement('option');
-                optEl.value = opc;
-                optEl.textContent = opc;
-                selectSub.appendChild(optEl);
+                optEl.value = opc; optEl.textContent = opc; selectSub.appendChild(optEl);
             });
-            
             contenedor.classList.remove('hidden');
         }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.classList.remove('bg-utc-orange', 'text-white', 'shadow-md');
                 el.classList.add('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
             });
             document.getElementById(`btn-${tabId}`).classList.remove('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
             document.getElementById(`btn-${tabId}`).classList.add('bg-utc-orange', 'text-white', 'shadow-md');
-
-            // Cierra automáticamente el menú desplegable en celulares al cambiar de pestaña
-            if(window.innerWidth < 768) {
-                document.getElementById('menu-items').classList.add('hidden');
-            }
-
+            if(window.innerWidth < 768) toggleMenu();
             if (tabId === 'dashboard') procesarAnaliticas();
         }
 
         function guardarIncidencia(e) {
             e.preventDefault();
             const cat = document.getElementById('categoria-seleccionada').value;
-            if(!cat) return alert('Por favor seleccione uno de los 3 botones de categoría.');
+            if(!cat) return alert('Por favor elija una categoría.');
 
             const nuevaIncidencia = {
                 fecha: new Date().toLocaleDateString('es-MX'),
+                timestamp: Date.now(), // Para cálculos de tiempo
                 matricula: document.getElementById('matricula').value.trim(),
                 nombre: document.getElementById('nombre').value.trim(),
                 grupo: document.getElementById('grupo').value.trim(),
                 tipo: `${cat} - ${document.getElementById('subcategoria').value}`,
                 descripcion: document.getElementById('descripcion').value.trim(),
-                eje: cat
+                eje: cat,
+                usuarioRegistro: usuarioActivo // Guardamos quién la capturó
             };
 
             incidencias.push(nuevaIncidencia);
@@ -348,31 +355,67 @@
             document.getElementById('categoria-seleccionada').value = "";
 
             alert('Registro archivado exitosamente.');
+            actualizarSelectorAlumnos();
             switchTab('dashboard');
         }
 
+        function actualizarSelectorAlumnos() {
+            const selector = document.getElementById('filtro-alumno');
+            selector.innerHTML = '<option value="todos">Todos los Alumnos</option>';
+            
+            // Extraer alumnos únicos
+            const alumnosUnicos = [...new Set(incidencias.map(i => i.nombre))].sort();
+            alumnosUnicos.forEach(alumno => {
+                const opt = document.createElement('option');
+                opt.value = alumno; opt.textContent = alumno;
+                selector.appendChild(opt);
+            });
+        }
+
         function procesarAnaliticas() {
-            const total = incidencias.length;
-            const academico = incidencias.filter(i => i.eje === 'Académica').length;
-            const conducta = incidencias.filter(i => i.eje === 'Conductual').length;
-            const emocional = incidencias.filter(i => i.eje === 'Emocional').length;
+            const filtroTiempo = document.getElementById('filtro-tiempo').value;
+            const filtroAlumno = document.getElementById('filtro-alumno').value;
+            const buscador = document.getElementById('buscador-global').value.toLowerCase().trim();
+
+            let filtradas = [...incidencias];
+            const ahora = Date.now();
+
+            // 1. Filtrar por Tiempo
+            if (filtroTiempo === 'semana') {
+                filtradas = filtradas.filter(i => (ahora - (i.timestamp || ahora)) <= 7 * 24 * 60 * 60 * 1000);
+            } else if (filtroTiempo === 'mes') {
+                filtradas = filtradas.filter(i => (ahora - (i.timestamp || ahora)) <= 30 * 24 * 60 * 60 * 1000);
+            }
+
+            // 2. Filtrar por Alumno específico
+            if (filtroAlumno !== 'todos') {
+                filtradas = filtradas.filter(i => i.nombre === filtroAlumno);
+            }
+
+            // 3. Filtrar por Buscador global superior
+            if (buscador !== "") {
+                filtradas = filtradas.filter(i => i.nombre.toLowerCase().includes(buscador) || i.matricula.toLowerCase().includes(buscador));
+            }
+
+            const total = filtradas.length;
+            const academico = filtradas.filter(i => i.eje === 'Académica').length;
+            const conducta = filtradas.filter(i => i.eje === 'Conductual').length;
+            const emocional = filtradas.filter(i => i.eje === 'Emocional').length;
 
             document.getElementById('kpi-total').innerText = total;
             document.getElementById('kpi-academico').innerText = academico;
             document.getElementById('kpi-conducta').innerText = conducta;
             document.getElementById('kpi-emocional').innerText = emocional;
 
+            // Renderizar Tabla
             const cuerpo = document.getElementById('tabla-cuerpo');
             cuerpo.innerHTML = '';
             
             if (total === 0) {
-                cuerpo.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No hay registros cargados actualmente.</td></tr>`;
+                cuerpo.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-400 italic">No se encontraron registros con los filtros activos.</td></tr>`;
             } else {
-                const incidenciasOrdenadas = [...incidencias].sort((a, b) => {
-                    return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
-                });
-
-                incidenciasOrdenadas.forEach(item => {
+                const ordenadas = [...filtradas].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+                ordenadas.forEach(item => {
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
                         <td class="px-4 md:px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-medium">${item.fecha}</td>
@@ -380,19 +423,28 @@
                         <td class="px-4 md:px-6 py-4 whitespace-nowrap font-medium text-gray-900">${item.nombre}</td>
                         <td class="px-4 md:px-6 py-4 whitespace-nowrap text-gray-600">${item.grupo}</td>
                         <td class="px-4 md:px-6 py-4 whitespace-nowrap text-xs font-bold ${item.eje==='Académica'?'text-utc-orange':item.eje==='Conductual'?'text-amber-600':'text-teal-600'}">${item.tipo}</td>
+                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-xs text-gray-600 font-semibold uppercase">${item.usuarioRegistro || 'admin'}</td>
                         <td class="px-4 md:px-6 py-4 max-w-xs truncate text-xs text-gray-500" title="${item.descripcion}">${item.descripcion}</td>
                     `;
                     cuerpo.appendChild(fila);
                 });
             }
 
-            chartTipo.data.datasets[0].data = [academico, conducta, emocional];
-            chartFlujo.data.datasets[0].data = [academico, total, conducta, emocional, total / 2];
-            chartTipo.update();
-            chartFlujo.update();
+            if (chartTipo && chartFlujo) {
+                chartTipo.data.datasets[0].data = [academico, conducta, emocional];
+                chartFlujo.data.datasets[0].data = [academico, total, conducta, emocional, total / 2];
+                chartTipo.update();
+                chartFlujo.update();
+            }
+        }
+
+        function filtrarPorBuscador() {
+            procesarAnaliticas();
         }
 
         function inicializarGraficas() {
+            if(chartFlujo || chartTipo) return; // Evitar duplicar contextos de Canvas
+
             const ctxFlujo = document.getElementById('chartFlujoSemanal').getContext('2d');
             chartFlujo = new Chart(ctxFlujo, {
                 type: 'line',
@@ -403,16 +455,10 @@
                         data: [0, 0, 0, 0, 0],
                         borderColor: '#c94a29',
                         backgroundColor: 'rgba(201, 74, 41, 0.05)',
-                        fill: true,
-                        tension: 0.3
+                        fill: true, tension: 0.3
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { ticks: { color: '#9ca3af' } }, x: { ticks: { color: '#9ca3af' } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
             const ctxTipo = document.getElementById('chartTipoIncidencia').getContext('2d');
@@ -420,50 +466,36 @@
                 type: 'doughnut',
                 data: {
                     labels: ['Académica', 'Conductual', 'Emocional'],
-                    datasets: [{
-                        data: [0, 0, 0],
-                        backgroundColor: ['#c94a29', '#0d2c54', '#0d9488'],
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
+                    datasets: [{ data: [0, 0, 0], backgroundColor: ['#c94a29', '#0d2c54', '#0d9488'], borderWidth: 2, borderColor: '#ffffff' }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
             });
         }
 
         function exportarExcel() {
-            if (incidencias.length === 0) return alert('No hay datos registrados.');
+            if (incidencias.length === 0) return alert('No hay datos.');
             const ordenadas = [...incidencias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-            const hoja = XLSX.utils.json_to_sheet(ordenadas.map(({fecha, matricula, nombre, grupo, tipo, descripcion}) => ({Fecha: fecha, Matrícula: matricula, Alumno: nombre, Grupo: grupo, Incidencia: tipo, Detalles: descripcion})));
+            const hoja = XLSX.utils.json_to_sheet(ordenadas.map(({fecha, matricula, nombre, grupo, tipo, usuarioRegistro, descripcion}) => ({
+                Fecha: fecha, Matrícula: matricula, Alumno: nombre, Grupo: grupo, Incidencia: tipo, "Registrado Por": (usuarioRegistro || 'admin').toUpperCase(), Detalles: descripcion
+            })));
             const libro = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(libro, hoja, "Reportes UTC");
-            XLSX.writeFile(libro, `Incidencias_UTC_Bachillerato.xlsx`);
+            XLSX.utils.book_append_sheet(libro, hoja, "Reportes Centrales UTC");
+            XLSX.writeFile(libro, `Base_Incidencias_General_UTC.xlsx`);
         }
 
         function exportarPDF() {
-            if (incidencias.length === 0) return alert('No hay datos registrados.');
+            if (incidencias.length === 0) return alert('No hay datos.');
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            doc.setFontSize(16);
-            doc.setTextColor(13, 44, 84);
-            doc.text("UNIVERSIDAD TRES CULTURAS - CONTROL DE INCIDENCIAS", 14, 20);
+            doc.setFontSize(14); doc.setTextColor(13, 44, 84);
+            doc.text("UNIVERSIDAD TRES CULTURAS - HISTORIAL CENTRALIZADO DE INCIDENCIAS", 14, 20);
             
-            const columnas = ["Fecha", "Matrícula", "Alumno", "Grupo", "Incidencia / Tipo", "Detalles"];
+            const columnas = ["Fecha", "Matrícula", "Alumno", "Grupo", "Tipo", "Capturó", "Detalles"];
             const ordenadas = [...incidencias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-            const filas = ordenadas.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, i.descripcion]);
+            const filas = ordenadas.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, (i.usuarioRegistro || 'admin').toUpperCase(), i.descripcion]);
 
-            doc.autoTable({
-                startY: 28,
-                head: [columnas],
-                body: filas,
-                headStyles: { fillColor: [13, 44, 84] },
-                styles: { fontSize: 8 }
-            });
-            doc.save(`Expediente_Incidencias_UTC.pdf`);
+            doc.autoTable({ startY: 28, head: [columnas], body: filas, headStyles: { fillColor: [13, 44, 84] }, styles: { fontSize: 7 } });
+            doc.save(`Expediente_General_Incidencias_UTC.pdf`);
         }
     </script>
 </body>
