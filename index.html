@@ -320,11 +320,6 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZGZnb2Z6YWxwZnpleGZzc3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjUwMTQsImV4cCI6MjA5OTEwMTAxNH0.FRtbuw2njwNBSeH_qpbHvkHnCmfB00fnxE2c6D4ZSQI";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // NOMBRES DE TABLAS EN SUPABASE
-        const TABLA_INCIDENCIAS = "incidencias";
-        const TABLA_ALUMNOS = "alumnos";
-        const TABLA_PERSONAL = "personal";
-
         const opcionesCatalogo = {
             "Académica": ["Adeudo de extraordinarios", "Bajo rendimiento académico", "Falsificar justificantes", "Inasistencias recurrentes", "No poner atención en clase", "No trabajar en clase"],
             "Conductual": ["Agresiones físicas", "Aventar objetos hacia la calle", "Comer en clase", "Consumir y/o portar sustancias ilícitas", "Daño al inmueble", "Falta de respeto al docente", "Falta de respeto al personal administrativo", "Grafiti en la pared", "Grabaciones / fotos de otra persona sin autorización", "Grosería hacia compañeros", "Hostigamiento verbal", "Jugar videojuegos en clase", "No bajar a receso", "No portar correctamente el uniforme", "No sentarse en su lugar asignado", "Posesión de objetos no permitidos", "Quedarse dormido en clase", "Salir del salón sin autorización", "Tomar sin permiso pertenencias ajenas", "Uso no autorizado de celular/audifonos"],
@@ -335,94 +330,65 @@
         let rolActivo = null;
         let incidencias = [];
         let baseAlumnos = [];
-        let listaMaestros = [];
-        let listaDirectivos = [];
+        let listaMaestros = ["Fulanito de Tal", "Profesora García"];
+        let listaDirectivos = ["Consultora Martínez", "Director General"];
+        let personalMaestros = [];
+        let personalDirectivos = [];
         let chartFlujo, chartTipo;
 
-        function mostrarErrorSupabase(error, accion) {
-            console.error(`Error al ${accion}:`, error);
-            alert(`No se pudo ${accion}. Revisa que las tablas de Supabase existan y que las políticas permitan lectura/escritura.`);
+        function normalizarIncidencia(i) {
+            return {
+                ...i,
+                usuarioRegistro: i.usuarioRegistro || i.usuarioregistro || "ADMINISTRADOR"
+            };
         }
 
         async function cargarDatosSupabase() {
-            await Promise.all([
-                cargarIncidenciasSupabase(),
-                cargarAlumnosSupabase(),
-                cargarPersonalSupabase()
-            ]);
-        }
+            try {
+                const [resIncidencias, resAlumnos, resPersonal] = await Promise.all([
+                    supabaseClient.from("incidencias").select("*").order("timestamp", { ascending: false }),
+                    supabaseClient.from("alumnos").select("*").order("nombre", { ascending: true }),
+                    supabaseClient.from("personal").select("*").order("nombre", { ascending: true })
+                ]);
 
-        async function cargarIncidenciasSupabase() {
-            const { data, error } = await supabaseClient
-                .from(TABLA_INCIDENCIAS)
-                .select("*")
-                .order("timestamp", { ascending: false });
+                if (resIncidencias.error) throw resIncidencias.error;
+                if (resAlumnos.error) throw resAlumnos.error;
+                if (resPersonal.error) throw resPersonal.error;
 
-            if (error) return mostrarErrorSupabase(error, "cargar incidencias");
-            incidencias = (data || []).map(i => ({
-                id: i.id,
-                fecha: i.fecha,
-                timestamp: Number(i.timestamp || new Date(i.created_at || Date.now()).getTime()),
-                matricula: i.matricula || "",
-                nombre: i.nombre || "",
-                grupo: i.grupo || "",
-                tipo: i.tipo || "",
-                descripcion: i.descripcion || "",
-                eje: i.eje || "",
-                usuarioRegistro: i.usuario_registro || i.usuarioRegistro || "ADMINISTRADOR"
-            }));
-        }
+                incidencias = (resIncidencias.data || []).map(normalizarIncidencia);
+                baseAlumnos = resAlumnos.data || [];
 
-        async function cargarAlumnosSupabase() {
-            const { data, error } = await supabaseClient
-                .from(TABLA_ALUMNOS)
-                .select("*")
-                .order("nombre", { ascending: true });
+                personalMaestros = (resPersonal.data || []).filter(p => p.tipo === "maestros");
+                personalDirectivos = (resPersonal.data || []).filter(p => p.tipo === "directivos");
 
-            if (error) return mostrarErrorSupabase(error, "cargar alumnos");
-            baseAlumnos = (data || []).map(a => ({
-                id: a.id,
-                matricula: a.matricula || "",
-                nombre: a.nombre || "",
-                grupo: a.grupo || ""
-            }));
-        }
+                listaMaestros = personalMaestros.map(p => p.nombre);
+                listaDirectivos = personalDirectivos.map(p => p.nombre);
 
-        async function cargarPersonalSupabase() {
-            const { data, error } = await supabaseClient
-                .from(TABLA_PERSONAL)
-                .select("*")
-                .order("nombre", { ascending: true });
+                if (listaMaestros.length === 0) listaMaestros = ["Fulanito de Tal", "Profesora García"];
+                if (listaDirectivos.length === 0) listaDirectivos = ["Consultora Martínez", "Director General"];
 
-            if (error) {
-                listaMaestros = ["Fulanito de Tal", "Profesora García"];
-                listaDirectivos = ["Consultora Martínez", "Director General"];
-                return mostrarErrorSupabase(error, "cargar personal");
+                actualizarSelectorAlumnos();
+                procesarAnaliticas();
+
+                if (rolActivo === "Administrador") {
+                    renderizarModuloAdministracion();
+                }
+            } catch (error) {
+                console.error("Error cargando Supabase:", error);
+                alert("No se pudieron cargar los datos de Supabase. Revisa internet, tablas y políticas RLS.");
             }
-
-            listaMaestros = (data || []).filter(p => p.tipo === "maestros").map(p => ({ id: p.id, nombre: p.nombre }));
-            listaDirectivos = (data || []).filter(p => p.tipo === "directivos").map(p => ({ id: p.id, nombre: p.nombre }));
-
-            if (listaMaestros.length === 0) listaMaestros = [{ id: null, nombre: "Fulanito de Tal" }, { id: null, nombre: "Profesora García" }];
-            if (listaDirectivos.length === 0) listaDirectivos = [{ id: null, nombre: "Consultora Martínez" }, { id: null, nombre: "Director General" }];
         }
 
-        function obtenerNombrePersonal(item) {
-            return typeof item === "string" ? item : item.nombre;
-        }
-
-        // FASE 1: CONTROL DE PASSWORDS
-        async function validarPassword(e) {
+        function validarPassword(e) {
             e.preventDefault();
             const passInput = document.getElementById('login-pass').value;
 
             if (passInput === PASS_ADMIN) {
                 rolActivo = "Administrador";
                 usuarioActivo = { nombre: "Pamela Elizabeth", cargo: "Administrador" };
-                await ingresarAlSistema();
+                ingresarAlSistema();
             } else if (passInput === PASS_OPERADOR) {
                 rolActivo = "Operador";
-                await cargarPersonalSupabase();
                 document.getElementById('form-login-pass').classList.add('hidden');
                 document.getElementById('form-login-cargo').classList.remove('hidden');
             } else {
@@ -434,8 +400,9 @@
             const select = document.getElementById('login-cargo-nombre');
             select.innerHTML = '<option value="">-- Seleccione Nombre --</option>';
             let fuente = (cargo === "Maestro") ? listaMaestros : listaDirectivos;
-            if(!cargo) return;
-            fuente.map(obtenerNombrePersonal).sort().forEach(n => {
+            if (!cargo) return;
+
+            fuente.sort().forEach(n => {
                 let opt = document.createElement('option');
                 opt.value = n;
                 opt.textContent = n;
@@ -443,18 +410,19 @@
             });
         }
 
-        async function finalizarIngresoOperador(e) {
+        function finalizarIngresoOperador(e) {
             e.preventDefault();
             const cargo = document.getElementById('login-cargo-tipo').value;
             const nombre = document.getElementById('login-cargo-nombre').value;
+
             usuarioActivo = { nombre: nombre, cargo: cargo };
-            await ingresarAlSistema();
+            ingresarAlSistema();
         }
 
         async function ingresarAlSistema() {
-            await cargarDatosSupabase();
             document.getElementById('pantalla-login').classList.add('hidden');
             document.getElementById('sidebar').classList.remove('hidden');
+
             document.getElementById('nombre-header').innerText = usuarioActivo.nombre;
             document.getElementById('rol-header').innerText = usuarioActivo.cargo;
             document.getElementById('user-tag').innerText = `Sesión: ${usuarioActivo.nombre} (${usuarioActivo.cargo})`;
@@ -468,7 +436,6 @@
                 btnAdmin.classList.remove('hidden');
                 zonaExportar.classList.remove('hidden');
                 columnasEliminar.forEach(c => c.classList.remove('hidden'));
-                renderizarModuloAdministracion();
             } else {
                 btnAdmin.classList.add('hidden');
                 zonaExportar.classList.add('hidden');
@@ -477,8 +444,7 @@
             }
 
             inicializarGraficas();
-            actualizarSelectorAlumnos();
-            procesarAnaliticas();
+            await cargarDatosSupabase();
         }
 
         function cerrarSesion() {
@@ -487,6 +453,7 @@
             document.getElementById('login-pass').value = "";
             document.getElementById('login-cargo-tipo').value = "";
             document.getElementById('login-cargo-nombre').innerHTML = '<option value="">-- Seleccione primero el cargo --</option>';
+
             document.getElementById('form-login-cargo').classList.add('hidden');
             document.getElementById('form-login-pass').classList.remove('hidden');
             document.getElementById('pantalla-login').classList.remove('hidden');
@@ -495,62 +462,81 @@
 
         function renderizarModuloAdministracion() {
             document.getElementById('info-alumnos-count').innerText = `Alumnos en Supabase: ${baseAlumnos.length}`;
+
             const cuerpoAl = document.getElementById('crud-alumnos-cuerpo');
             cuerpoAl.innerHTML = '';
-            baseAlumnos.forEach((al, index) => {
+
+            if (baseAlumnos.length === 0) {
+                cuerpoAl.innerHTML = `<tr><td colspan="4" class="px-3 py-4 text-center text-gray-400 italic">No hay alumnos registrados.</td></tr>`;
+            }
+
+            baseAlumnos.forEach((al) => {
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="px-3 py-1.5 font-bold text-utc-blue">${al.matricula}</td>
-                    <td class="px-3 py-1.5">${al.nombre}</td>
-                    <td class="px-3 py-1.5 font-semibold text-utc-orange">${al.grupo}</td>
-                    <td class="px-3 py-1.5 text-center"><button onclick="eliminarAlumnoCat(${index})" class="text-red-500 font-bold hover:underline">Eliminar</button></td>
+                    <td class="px-3 py-1.5 font-bold text-utc-blue">${al.matricula || ""}</td>
+                    <td class="px-3 py-1.5">${al.nombre || ""}</td>
+                    <td class="px-3 py-1.5 font-semibold text-utc-orange">${al.grupo || ""}</td>
+                    <td class="px-3 py-1.5 text-center"><button onclick="eliminarAlumnoCat(${al.id})" class="text-red-500 font-bold hover:underline">Eliminar</button></td>
                 `;
                 cuerpoAl.appendChild(tr);
             });
 
             const ulM = document.getElementById('lista-maestros');
             ulM.innerHTML = '';
-            listaMaestros.forEach((m, index) => {
-                ulM.innerHTML += `<li class="flex justify-between py-1 border-b"><span>${obtenerNombrePersonal(m)}</span><button onclick="eliminarPersonal('maestros', ${index})" class="text-red-500 font-bold hover:underline">X</button></li>`;
+            personalMaestros.forEach((m) => {
+                ulM.innerHTML += `<li class="flex justify-between py-1 border-b"><span>${m.nombre}</span><button onclick="eliminarPersonal('maestros', ${m.id})" class="text-red-500 font-bold hover:underline">X</button></li>`;
             });
+            if (personalMaestros.length === 0) {
+                ulM.innerHTML = `<li class="py-2 text-gray-400 italic">Sin maestros en Supabase.</li>`;
+            }
 
             const ulD = document.getElementById('lista-directivos');
             ulD.innerHTML = '';
-            listaDirectivos.forEach((d, index) => {
-                ulD.innerHTML += `<li class="flex justify-between py-1 border-b"><span>${obtenerNombrePersonal(d)}</span><button onclick="eliminarPersonal('directivos', ${index})" class="text-red-500 font-bold hover:underline">X</button></li>`;
+            personalDirectivos.forEach((d) => {
+                ulD.innerHTML += `<li class="flex justify-between py-1 border-b"><span>${d.nombre}</span><button onclick="eliminarPersonal('directivos', ${d.id})" class="text-red-500 font-bold hover:underline">X</button></li>`;
             });
+            if (personalDirectivos.length === 0) {
+                ulD.innerHTML = `<li class="py-2 text-gray-400 italic">Sin directivos en Supabase.</li>`;
+            }
         }
 
         async function importarExcelAlumnosMasivo(e) {
             const file = e.target.files[0];
             if (!file) return;
+
             const reader = new FileReader();
             reader.onload = async function(evt) {
-                const data = new Uint8Array(evt.target.result);
-                const wb = XLSX.read(data, { type: 'array' });
-                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const wb = XLSX.read(data, { type: 'array' });
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
 
-                const alumnosImportados = json.map(f => {
-                    let r = { matricula: '', nombre: '', grupo: '' };
-                    Object.keys(f).forEach(k => {
-                        let l = k.toLowerCase().trim();
-                        if (l.includes('matricula') || l.includes('matrícula')) r.matricula = String(f[k]).trim();
-                        if (l.includes('nombre')) r.nombre = String(f[k]).trim();
-                        if (l.includes('grupo') || l.includes('cuatrimestre')) r.grupo = String(f[k]).trim();
-                    });
-                    return r;
-                }).filter(r => r.matricula && r.nombre);
+                    const alumnosImportados = json.map(f => {
+                        let r = { matricula: '', nombre: '', grupo: '' };
+                        Object.keys(f).forEach(k => {
+                            let l = k.toLowerCase().trim();
+                            if (l.includes('matricula') || l.includes('matrícula')) r.matricula = String(f[k]).trim();
+                            if (l.includes('nombre')) r.nombre = String(f[k]).trim();
+                            if (l.includes('grupo') || l.includes('cuatrimestre')) r.grupo = String(f[k]).trim();
+                        });
+                        return r;
+                    }).filter(r => r.matricula && r.nombre);
 
-                if (alumnosImportados.length === 0) return alert("No encontré columnas de matrícula y nombre en el Excel.");
+                    if (alumnosImportados.length === 0) {
+                        alert("No se encontraron alumnos válidos. Revisa que el Excel tenga matrícula, nombre y grupo.");
+                        return;
+                    }
 
-                const { error } = await supabaseClient
-                    .from(TABLA_ALUMNOS)
-                    .upsert(alumnosImportados, { onConflict: 'matricula' });
+                    const { error } = await supabaseClient.from("alumnos").insert(alumnosImportados);
+                    if (error) throw error;
 
-                if (error) return mostrarErrorSupabase(error, "importar alumnos");
-                await cargarAlumnosSupabase();
-                renderizarModuloAdministracion();
-                alert("Base de alumnos importada con éxito en Supabase.");
+                    await cargarDatosSupabase();
+                    alert("Base de alumnos importada con éxito en Supabase.");
+                    e.target.value = "";
+                } catch (error) {
+                    console.error(error);
+                    alert("Error al importar alumnos. Si hay matrículas repetidas, elimina duplicados del Excel o de Supabase.");
+                }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -559,71 +545,61 @@
             const mat = document.getElementById('crud-al-mat').value.trim();
             const nom = document.getElementById('crud-al-nom').value.trim();
             const gru = document.getElementById('crud-al-gru').value.trim();
-            if(!mat || !nom || !gru) return alert("Rellene todos los campos del estudiante.");
 
-            const { error } = await supabaseClient
-                .from(TABLA_ALUMNOS)
-                .upsert([{ matricula: mat, nombre: nom, grupo: gru }], { onConflict: 'matricula' });
+            if (!mat || !nom || !gru) return alert("Rellene todos los campos del estudiante.");
 
-            if (error) return mostrarErrorSupabase(error, "guardar alumno");
+            const { error } = await supabaseClient.from("alumnos").insert([{ matricula: mat, nombre: nom, grupo: gru }]);
+            if (error) {
+                console.error(error);
+                return alert("No se pudo guardar el alumno. Verifica que la matrícula no esté repetida.");
+            }
+
             document.getElementById('crud-al-mat').value = "";
             document.getElementById('crud-al-nom').value = "";
             document.getElementById('crud-al-gru').value = "";
-            await cargarAlumnosSupabase();
-            renderizarModuloAdministracion();
+            await cargarDatosSupabase();
         }
 
-        async function eliminarAlumnoCat(index) {
-            const alumno = baseAlumnos[index];
-            if(!alumno || !confirm("¿Desea dar de baja este estudiante de la base general?")) return;
-            const { error } = await supabaseClient
-                .from(TABLA_ALUMNOS)
-                .delete()
-                .eq('id', alumno.id);
-
-            if (error) return mostrarErrorSupabase(error, "eliminar alumno");
-            await cargarAlumnosSupabase();
-            renderizarModuloAdministracion();
+        async function eliminarAlumnoCat(id) {
+            if (confirm("¿Desea dar de baja este estudiante de la base general?")) {
+                const { error } = await supabaseClient.from("alumnos").delete().eq("id", id);
+                if (error) {
+                    console.error(error);
+                    return alert("No se pudo eliminar el alumno.");
+                }
+                await cargarDatosSupabase();
+            }
         }
 
         async function agregarPersonal(tipo) {
             let val = "";
-            if(tipo === 'maestros') {
+            if (tipo === 'maestros') {
                 val = document.getElementById('input-nuevo-maestro').value.trim();
-                document.getElementById('input-nuevo-maestro').value = "";
             } else {
                 val = document.getElementById('input-nuevo-directivo').value.trim();
-                document.getElementById('input-nuevo-directivo').value = "";
             }
 
             if (!val) return;
-            const { error } = await supabaseClient
-                .from(TABLA_PERSONAL)
-                .insert([{ tipo: tipo, nombre: val }]);
 
-            if (error) return mostrarErrorSupabase(error, "agregar personal");
-            await cargarPersonalSupabase();
-            renderizarModuloAdministracion();
-        }
-
-        async function eliminarPersonal(tipo, index) {
-            const lista = tipo === 'maestros' ? listaMaestros : listaDirectivos;
-            const item = lista[index];
-            if (!item) return;
-
-            if (!item.id) {
-                lista.splice(index, 1);
-                return renderizarModuloAdministracion();
+            const { error } = await supabaseClient.from("personal").insert([{ nombre: val, tipo: tipo }]);
+            if (error) {
+                console.error(error);
+                return alert("No se pudo guardar el personal.");
             }
 
-            const { error } = await supabaseClient
-                .from(TABLA_PERSONAL)
-                .delete()
-                .eq('id', item.id);
+            if (tipo === 'maestros') document.getElementById('input-nuevo-maestro').value = "";
+            else document.getElementById('input-nuevo-directivo').value = "";
 
-            if (error) return mostrarErrorSupabase(error, "eliminar personal");
-            await cargarPersonalSupabase();
-            renderizarModuloAdministracion();
+            await cargarDatosSupabase();
+        }
+
+        async function eliminarPersonal(tipo, id) {
+            const { error } = await supabaseClient.from("personal").delete().eq("id", id);
+            if (error) {
+                console.error(error);
+                return alert("No se pudo eliminar el registro.");
+            }
+            await cargarDatosSupabase();
         }
 
         function buscarAlumnoPredictivo(valor) {
@@ -632,10 +608,12 @@
             const busqueda = valor.toLowerCase().trim();
             if (busqueda.length < 2) return contenedor.classList.add('hidden');
 
-            const coincidencias = baseAlumnos.filter(a =>
-                (a.matricula || '').toLowerCase().includes(busqueda) ||
-                (a.nombre || '').toLowerCase().includes(busqueda)
-            ).slice(0, 5);
+            const coincidencias = baseAlumnos
+                .filter(a =>
+                    String(a.matricula || "").toLowerCase().includes(busqueda) ||
+                    String(a.nombre || "").toLowerCase().includes(busqueda)
+                )
+                .slice(0, 5);
 
             if (coincidencias.length === 0) {
                 contenedor.innerHTML = `<div class="p-2 text-gray-400 italic">No registrado en base.</div>`;
@@ -647,9 +625,9 @@
                 item.className = "p-2 hover:bg-gray-100 cursor-pointer border-b text-gray-700 font-medium";
                 item.innerHTML = `<span class="text-utc-orange font-bold">[${a.matricula}]</span> ${a.nombre}`;
                 item.onclick = function() {
-                    document.getElementById('matricula').value = a.matricula;
-                    document.getElementById('nombre').value = a.nombre;
-                    document.getElementById('grupo').value = a.grupo;
+                    document.getElementById('matricula').value = a.matricula || "";
+                    document.getElementById('nombre').value = a.nombre || "";
+                    document.getElementById('grupo').value = a.grupo || "";
                     contenedor.classList.add('hidden');
                 };
                 contenedor.appendChild(item);
@@ -684,16 +662,18 @@
             const ahora = Date.now();
 
             if (filtroTiempo === 'semana') {
-                filtradas = filtradas.filter(i => (ahora - (Number(i.timestamp) || ahora)) <= 7 * 24 * 60 * 60 * 1000);
+                filtradas = filtradas.filter(i => (ahora - Number(i.timestamp || ahora)) <= 7 * 24 * 60 * 60 * 1000);
             } else if (filtroTiempo === 'mes') {
-                filtradas = filtradas.filter(i => (ahora - (Number(i.timestamp) || ahora)) <= 30 * 24 * 60 * 60 * 1000);
+                filtradas = filtradas.filter(i => (ahora - Number(i.timestamp || ahora)) <= 30 * 24 * 60 * 60 * 1000);
             }
 
             if (filtroAlumno !== 'todos') filtradas = filtradas.filter(i => i.nombre === filtroAlumno);
-            if (buscadorGlobal !== "") filtradas = filtradas.filter(i =>
-                (i.nombre || '').toLowerCase().includes(buscadorGlobal) ||
-                (i.matricula || '').toLowerCase().includes(buscadorGlobal)
-            );
+            if (buscadorGlobal !== "") {
+                filtradas = filtradas.filter(i =>
+                    String(i.nombre || "").toLowerCase().includes(buscadorGlobal) ||
+                    String(i.matricula || "").toLowerCase().includes(buscadorGlobal)
+                );
+            }
 
             const total = filtradas.length;
             const academico = filtradas.filter(i => i.eje === 'Académica').length;
@@ -711,18 +691,20 @@
             if (total === 0) {
                 cuerpo.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-gray-400 italic">No se hallaron coincidencias.</td></tr>`;
             } else {
-                const ordenadas = [...filtradas].sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+                const ordenadas = [...filtradas].sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
                 ordenadas.forEach(item => {
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
-                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${item.fecha}</td>
-                        <td class="px-4 py-3 whitespace-nowrap font-bold text-utc-blue">${item.matricula}</td>
-                        <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-900">${item.nombre}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-gray-600">${item.grupo}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-xs font-bold ${item.eje==='Académica'?'text-utc-orange':item.eje==='Conductual'?'text-amber-600':'text-teal-600'}">${item.tipo}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${item.fecha || ""}</td>
+                        <td class="px-4 py-3 whitespace-nowrap font-bold text-utc-blue">${item.matricula || ""}</td>
+                        <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-900">${item.nombre || ""}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-600">${item.grupo || ""}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs font-bold ${item.eje==='Académica'?'text-utc-orange':item.eje==='Conductual'?'text-amber-600':'text-teal-600'}">${item.tipo || ""}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-xs font-bold uppercase text-gray-600">${item.usuarioRegistro || 'ADMINISTRADOR'}</td>
-                        <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="${item.descripcion}">${item.descripcion}</td>
-                        <td class="px-4 py-3 text-center whitespace-nowrap th-eliminar-registro ${rolActivo !== "Administrador" ? "hidden" : ""}"><button onclick="eliminarIncidenciaHistorial(${item.id})" class="text-red-500 font-bold hover:underline">Borrar</button></td>
+                        <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="${item.descripcion || ""}">${item.descripcion || ""}</td>
+                        <td class="px-4 py-3 text-center whitespace-nowrap th-eliminar-registro ${rolActivo !== "Administrador" ? "hidden" : ""}">
+                            <button onclick="eliminarIncidenciaHistorial(${item.id})" class="text-red-500 font-bold hover:underline">Borrar</button>
+                        </td>
                     `;
                     cuerpo.appendChild(fila);
                 });
@@ -730,74 +712,72 @@
 
             if (chartTipo && chartFlujo) {
                 chartTipo.data.datasets[0].data = [academico, conducta, emocional];
-                chartFlujo.data.datasets[0].data = [academico, total, conducta, emocional, Math.round(total / 2)];
+                chartFlujo.data.datasets[0].data = [academico, total, conducta, emocional, total / 2];
                 chartTipo.update();
                 chartFlujo.update();
             }
         }
 
         async function eliminarIncidenciaHistorial(id) {
-            if(!confirm("¿Está seguro de eliminar formalmente este registro del historial institucional?")) return;
-            const { error } = await supabaseClient
-                .from(TABLA_INCIDENCIAS)
-                .delete()
-                .eq('id', id);
-
-            if (error) return mostrarErrorSupabase(error, "eliminar incidencia");
-            await cargarIncidenciasSupabase();
-            procesarAnaliticas();
-            actualizarSelectorAlumnos();
+            if (confirm("¿Está seguro de eliminar formalmente este registro del historial institucional?")) {
+                const { error } = await supabaseClient.from("incidencias").delete().eq("id", id);
+                if (error) {
+                    console.error(error);
+                    return alert("No se pudo eliminar la incidencia.");
+                }
+                await cargarDatosSupabase();
+            }
         }
 
         async function guardarIncidencia(e) {
             e.preventDefault();
             const cat = document.getElementById('categoria-seleccionada').value;
-            if(!cat) return alert('Por favor elija una categoría.');
+            if (!cat) return alert('Por favor elija una categoría.');
 
-            const timestampActual = Date.now();
             const nuevaIncidencia = {
                 fecha: new Date().toLocaleDateString('es-MX'),
-                timestamp: timestampActual,
+                timestamp: Date.now(),
                 matricula: document.getElementById('matricula').value.trim(),
                 nombre: document.getElementById('nombre').value.trim(),
                 grupo: document.getElementById('grupo').value.trim(),
                 tipo: `${cat} - ${document.getElementById('subcategoria').value}`,
                 descripcion: document.getElementById('descripcion').value.trim(),
                 eje: cat,
-                usuario_registro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}`
+                usuarioregistro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}`
             };
 
-            const { error } = await supabaseClient
-                .from(TABLA_INCIDENCIAS)
-                .insert([nuevaIncidencia]);
+            const { error } = await supabaseClient.from("incidencias").insert([nuevaIncidencia]);
+            if (error) {
+                console.error(error);
+                return alert("No se pudo registrar la incidencia en Supabase.");
+            }
 
-            if (error) return mostrarErrorSupabase(error, "guardar incidencia");
-
-            await cargarIncidenciasSupabase();
             document.getElementById('form-incidencia').reset();
             document.getElementById('contenedor-subcategoria').classList.add('hidden');
             document.querySelectorAll('.cat-btn').forEach(b => {
-                b.classList.remove('bg-utc-orange', 'bg-utc-blue', 'bg-teal-600', 'text-white', 'border-utc-orange', 'border-utc-blue', 'border-teal-600');
+                b.classList.remove('bg-utc-orange', 'bg-utc-blue', 'bg-teal-600', 'text-white');
                 b.classList.add('bg-gray-50', 'text-gray-600');
             });
             document.getElementById('categoria-seleccionada').value = "";
+
             alert('Incidencia registrada en Supabase.');
-            actualizarSelectorAlumnos();
+            await cargarDatosSupabase();
             switchTab('dashboard');
-            procesarAnaliticas();
         }
 
         function selectCategoria(cat) {
             document.getElementById('categoria-seleccionada').value = cat;
             document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.remove('bg-utc-orange', 'text-white', 'border-utc-orange', 'bg-utc-blue', 'border-utc-blue', 'bg-teal-600', 'border-teal-600');
+                btn.classList.remove('bg-utc-orange', 'text-white', 'border-utc-orange', 'bg-utc-blue', 'bg-teal-600', 'border-utc-blue', 'border-teal-600');
                 btn.classList.add('bg-gray-50', 'text-gray-600');
             });
+
             const activeBtn = document.getElementById(`cat-${cat}`);
             activeBtn.classList.remove('bg-gray-50', 'text-gray-600');
-            if(cat === 'Académica') activeBtn.classList.add('bg-utc-orange', 'text-white', 'border-utc-orange');
-            if(cat === 'Conductual') activeBtn.classList.add('bg-utc-blue', 'text-white', 'border-utc-blue');
-            if(cat === 'Emocional') activeBtn.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
+
+            if (cat === 'Académica') activeBtn.classList.add('bg-utc-orange', 'text-white', 'border-utc-orange');
+            if (cat === 'Conductual') activeBtn.classList.add('bg-utc-blue', 'text-white', 'border-utc-blue');
+            if (cat === 'Emocional') activeBtn.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
 
             const contenedor = document.getElementById('contenedor-subcategoria');
             const selectSub = document.getElementById('subcategoria');
@@ -814,14 +794,17 @@
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.classList.remove('bg-utc-orange', 'text-white', 'shadow-md');
                 el.classList.add('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
             });
+
             document.getElementById(`btn-${tabId}`).classList.remove('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
             document.getElementById(`btn-${tabId}`).classList.add('bg-utc-orange', 'text-white', 'shadow-md');
-            if(window.innerWidth < 768) toggleMenu();
-            if (tabId === 'dashboard') procesarAnaliticas();
+
+            if (window.innerWidth < 768) toggleMenu();
+            if (tabId === 'dashboard' || tabId === 'historial') procesarAnaliticas();
             if (tabId === 'administracion') renderizarModuloAdministracion();
         }
 
@@ -834,15 +817,27 @@
         }
 
         function inicializarGraficas() {
-            if(chartFlujo || chartTipo) return;
+            if (chartFlujo || chartTipo) return;
+
             const ctxFlujo = document.getElementById('chartFlujoSemanal').getContext('2d');
             chartFlujo = new Chart(ctxFlujo, {
                 type: 'line',
                 data: {
                     labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'],
-                    datasets: [{ label: 'Volumen', data: [0, 0, 0, 0, 0], borderColor: '#c94a29', backgroundColor: 'rgba(201, 74, 41, 0.05)', fill: true, tension: 0.3 }]
+                    datasets: [{
+                        label: 'Volumen',
+                        data: [0, 0, 0, 0, 0],
+                        borderColor: '#c94a29',
+                        backgroundColor: 'rgba(201, 74, 41, 0.05)',
+                        fill: true,
+                        tension: 0.3
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
             });
 
             const ctxTipo = document.getElementById('chartTipoIncidencia').getContext('2d');
@@ -850,9 +845,23 @@
                 type: 'doughnut',
                 data: {
                     labels: ['Académica', 'Conductual', 'Emocional'],
-                    datasets: [{ data: [0, 0, 0], backgroundColor: ['#c94a29', '#0d2c54', '#0d9488'], borderWidth: 2, borderColor: '#ffffff' }]
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#c94a29', '#0d2c54', '#0d9488'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10, font: { size: 10 } }
+                        }
+                    }
+                }
             });
         }
 
@@ -876,15 +885,25 @@
             if (incidencias.length === 0) return alert('No hay datos.');
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+
             doc.setFontSize(12);
             doc.setTextColor(13, 44, 84);
             doc.text("UNIVERSIDAD TRES CULTURAS - EXPEDIENTE CENTRAL DE INCIDENCIAS", 14, 20);
+
             const columnas = ["Fecha", "Matrícula", "Alumno", "Grupo", "Tipo Incidencia", "Quién Reportó", "Detalles"];
             const filas = incidencias.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, i.usuarioRegistro, i.descripcion]);
-            doc.autoTable({ startY: 26, head: [columnas], body: filas, headStyles: { fillColor: [13, 44, 84] }, styles: { fontSize: 7 } });
+
+            doc.autoTable({
+                startY: 26,
+                head: [columnas],
+                body: filas,
+                headStyles: { fillColor: [13, 44, 84] },
+                styles: { fontSize: 7 }
+            });
+
             doc.save(`Expediente_Incidencias_UTC.pdf`);
         }
-
     </script>
+
 </body>
 </html>
