@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         .bg-utc-blue { background-color: #0d2c54; }
@@ -314,35 +315,114 @@
         const PASS_ADMIN = "UTCadmin2026";
         const PASS_OPERADOR = "UTCoperador2026";
 
+        // CONFIGURACIÓN SUPABASE
+        const SUPABASE_URL = "https://uldfgofzalpfzexfsspl.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZGZnb2Z6YWxwZnpleGZzc3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjUwMTQsImV4cCI6MjA5OTEwMTAxNH0.FRtbuw2njwNBSeH_qpbHvkHnCmfB00fnxE2c6D4ZSQI";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // NOMBRES DE TABLAS EN SUPABASE
+        const TABLA_INCIDENCIAS = "incidencias";
+        const TABLA_ALUMNOS = "alumnos";
+        const TABLA_PERSONAL = "personal";
+
         const opcionesCatalogo = {
             "Académica": ["Adeudo de extraordinarios", "Bajo rendimiento académico", "Falsificar justificantes", "Inasistencias recurrentes", "No poner atención en clase", "No trabajar en clase"],
             "Conductual": ["Agresiones físicas", "Aventar objetos hacia la calle", "Comer en clase", "Consumir y/o portar sustancias ilícitas", "Daño al inmueble", "Falta de respeto al docente", "Falta de respeto al personal administrativo", "Grafiti en la pared", "Grabaciones / fotos de otra persona sin autorización", "Grosería hacia compañeros", "Hostigamiento verbal", "Jugar videojuegos en clase", "No bajar a receso", "No portar correctamente el uniforme", "No sentarse en su lugar asignado", "Posesión de objetos no permitidos", "Quedarse dormido en clase", "Salir del salón sin autorización", "Tomar sin permiso pertenencias ajenas", "Uso no autorizado de celular/audifonos"],
             "Emocional": ["Canalización por conducta", "Crisis de ansiedad", "Mediación de conflictos entre alumnos", "Orientación para el aprendizaje", "Orientación psicoemocional", "Seguimiento externo"]
         };
 
-        // OBJETOS ESTRUCTURALES EN LOCALSTORAGE
         let usuarioActivo = { nombre: "Pamela Elizabeth", cargo: "Administrador" };
-        let rolActivo = null; 
-        let incidencias = JSON.parse(localStorage.getItem('incidencias_utc')) || [];
-        let baseAlumnos = JSON.parse(localStorage.getItem('base_alumnos_utc')) || [];
-        
-        // Listas manuales de docentes/directivos
-        let listaMaestros = JSON.parse(localStorage.getItem('list_maestros_utc')) || ["Fulanito de Tal", "Profesora García"];
-        let listaDirectivos = JSON.parse(localStorage.getItem('list_directivos_utc')) || ["Consultora Martínez", "Director General"];
-
+        let rolActivo = null;
+        let incidencias = [];
+        let baseAlumnos = [];
+        let listaMaestros = [];
+        let listaDirectivos = [];
         let chartFlujo, chartTipo;
 
+        function mostrarErrorSupabase(error, accion) {
+            console.error(`Error al ${accion}:`, error);
+            alert(`No se pudo ${accion}. Revisa que las tablas de Supabase existan y que las políticas permitan lectura/escritura.`);
+        }
+
+        async function cargarDatosSupabase() {
+            await Promise.all([
+                cargarIncidenciasSupabase(),
+                cargarAlumnosSupabase(),
+                cargarPersonalSupabase()
+            ]);
+        }
+
+        async function cargarIncidenciasSupabase() {
+            const { data, error } = await supabaseClient
+                .from(TABLA_INCIDENCIAS)
+                .select("*")
+                .order("timestamp", { ascending: false });
+
+            if (error) return mostrarErrorSupabase(error, "cargar incidencias");
+            incidencias = (data || []).map(i => ({
+                id: i.id,
+                fecha: i.fecha,
+                timestamp: Number(i.timestamp || new Date(i.created_at || Date.now()).getTime()),
+                matricula: i.matricula || "",
+                nombre: i.nombre || "",
+                grupo: i.grupo || "",
+                tipo: i.tipo || "",
+                descripcion: i.descripcion || "",
+                eje: i.eje || "",
+                usuarioRegistro: i.usuario_registro || i.usuarioRegistro || "ADMINISTRADOR"
+            }));
+        }
+
+        async function cargarAlumnosSupabase() {
+            const { data, error } = await supabaseClient
+                .from(TABLA_ALUMNOS)
+                .select("*")
+                .order("nombre", { ascending: true });
+
+            if (error) return mostrarErrorSupabase(error, "cargar alumnos");
+            baseAlumnos = (data || []).map(a => ({
+                id: a.id,
+                matricula: a.matricula || "",
+                nombre: a.nombre || "",
+                grupo: a.grupo || ""
+            }));
+        }
+
+        async function cargarPersonalSupabase() {
+            const { data, error } = await supabaseClient
+                .from(TABLA_PERSONAL)
+                .select("*")
+                .order("nombre", { ascending: true });
+
+            if (error) {
+                listaMaestros = ["Fulanito de Tal", "Profesora García"];
+                listaDirectivos = ["Consultora Martínez", "Director General"];
+                return mostrarErrorSupabase(error, "cargar personal");
+            }
+
+            listaMaestros = (data || []).filter(p => p.tipo === "maestros").map(p => ({ id: p.id, nombre: p.nombre }));
+            listaDirectivos = (data || []).filter(p => p.tipo === "directivos").map(p => ({ id: p.id, nombre: p.nombre }));
+
+            if (listaMaestros.length === 0) listaMaestros = [{ id: null, nombre: "Fulanito de Tal" }, { id: null, nombre: "Profesora García" }];
+            if (listaDirectivos.length === 0) listaDirectivos = [{ id: null, nombre: "Consultora Martínez" }, { id: null, nombre: "Director General" }];
+        }
+
+        function obtenerNombrePersonal(item) {
+            return typeof item === "string" ? item : item.nombre;
+        }
+
         // FASE 1: CONTROL DE PASSWORDS
-        function validarPassword(e) {
+        async function validarPassword(e) {
             e.preventDefault();
             const passInput = document.getElementById('login-pass').value;
 
             if (passInput === PASS_ADMIN) {
                 rolActivo = "Administrador";
                 usuarioActivo = { nombre: "Pamela Elizabeth", cargo: "Administrador" };
-                ingresarAlSistema();
+                await ingresarAlSistema();
             } else if (passInput === PASS_OPERADOR) {
                 rolActivo = "Operador";
+                await cargarPersonalSupabase();
                 document.getElementById('form-login-pass').classList.add('hidden');
                 document.getElementById('form-login-cargo').classList.remove('hidden');
             } else {
@@ -350,39 +430,36 @@
             }
         }
 
-        // CARGA DINÁMICA DE NOMENCLATURAS EN LOGIN
         function cargarNombresLogin(cargo) {
             const select = document.getElementById('login-cargo-nombre');
             select.innerHTML = '<option value="">-- Seleccione Nombre --</option>';
             let fuente = (cargo === "Maestro") ? listaMaestros : listaDirectivos;
-            
             if(!cargo) return;
-            fuente.sort().forEach(n => {
+            fuente.map(obtenerNombrePersonal).sort().forEach(n => {
                 let opt = document.createElement('option');
-                opt.value = n; opt.textContent = n; select.appendChild(opt);
+                opt.value = n;
+                opt.textContent = n;
+                select.appendChild(opt);
             });
         }
 
-        // FASE 2: INGRESO DE OPERADORES TRAS ELEGIR ATRIBUTOS
-        function finalizarIngresoOperador(e) {
+        async function finalizarIngresoOperador(e) {
             e.preventDefault();
             const cargo = document.getElementById('login-cargo-tipo').value;
             const nombre = document.getElementById('login-cargo-nombre').value;
-
             usuarioActivo = { nombre: nombre, cargo: cargo };
-            ingresarAlSistema();
+            await ingresarAlSistema();
         }
 
-        function ingresarAlSistema() {
+        async function ingresarAlSistema() {
+            await cargarDatosSupabase();
             document.getElementById('pantalla-login').classList.add('hidden');
             document.getElementById('sidebar').classList.remove('hidden');
-            
             document.getElementById('nombre-header').innerText = usuarioActivo.nombre;
             document.getElementById('rol-header').innerText = usuarioActivo.cargo;
             document.getElementById('user-tag').innerText = `Sesión: ${usuarioActivo.nombre} (${usuarioActivo.cargo})`;
             document.getElementById('saludo-personalizado').innerText = `¡Hola, ${usuarioActivo.cargo} ${usuarioActivo.nombre}!`;
 
-            // Permisos de Visualización y Estructuras CRUD
             const btnAdmin = document.getElementById('btn-administracion');
             const zonaExportar = document.getElementById('zona-exportar');
             const columnasEliminar = document.querySelectorAll('.th-eliminar-registro');
@@ -396,7 +473,6 @@
                 btnAdmin.classList.add('hidden');
                 zonaExportar.classList.add('hidden');
                 columnasEliminar.forEach(c => c.classList.add('hidden'));
-                // Si es operador, mandarlo por defecto a registrar incidencia directo
                 switchTab('registro');
             }
 
@@ -411,18 +487,14 @@
             document.getElementById('login-pass').value = "";
             document.getElementById('login-cargo-tipo').value = "";
             document.getElementById('login-cargo-nombre').innerHTML = '<option value="">-- Seleccione primero el cargo --</option>';
-            
             document.getElementById('form-login-cargo').classList.add('hidden');
             document.getElementById('form-login-pass').classList.remove('hidden');
             document.getElementById('pantalla-login').classList.remove('hidden');
             document.getElementById('sidebar').classList.add('hidden');
         }
 
-        // CONTROL CRUD: ALUMNOS E INSTITUCIONALES (SOLO ADMIN)
         function renderizarModuloAdministracion() {
-            document.getElementById('info-alumnos-count').innerText = `Alumnos en memoria: ${baseAlumnos.length}`;
-            
-            // Render tabla Alumnos
+            document.getElementById('info-alumnos-count').innerText = `Alumnos en Supabase: ${baseAlumnos.length}`;
             const cuerpoAl = document.getElementById('crud-alumnos-cuerpo');
             cuerpoAl.innerHTML = '';
             baseAlumnos.forEach((al, index) => {
@@ -436,28 +508,29 @@
                 cuerpoAl.appendChild(tr);
             });
 
-            // Render Maestros
-            const ulM = document.getElementById('lista-maestros'); ulM.innerHTML = '';
+            const ulM = document.getElementById('lista-maestros');
+            ulM.innerHTML = '';
             listaMaestros.forEach((m, index) => {
-                ulM.innerHTML += `<li class="flex justify-between py-1 border-b"><span>${m}</span><button onclick="eliminarPersonal('maestros', ${index})" class="text-red-500 font-bold hover:underline">X</button></li>`;
+                ulM.innerHTML += `<li class="flex justify-between py-1 border-b"><span>${obtenerNombrePersonal(m)}</span><button onclick="eliminarPersonal('maestros', ${index})" class="text-red-500 font-bold hover:underline">X</button></li>`;
             });
 
-            // Render Directivos
-            const ulD = document.getElementById('lista-directivos'); ulD.innerHTML = '';
+            const ulD = document.getElementById('lista-directivos');
+            ulD.innerHTML = '';
             listaDirectivos.forEach((d, index) => {
-                ulD.innerHTML += `<li class="flex justify-between py-1 border-b"><span>${d}</span><button onclick="eliminarPersonal('directivos', ${index})" class="text-red-500 font-bold hover:underline">X</button></li>`;
+                ulD.innerHTML += `<li class="flex justify-between py-1 border-b"><span>${obtenerNombrePersonal(d)}</span><button onclick="eliminarPersonal('directivos', ${index})" class="text-red-500 font-bold hover:underline">X</button></li>`;
             });
         }
 
-        function importarExcelAlumnosMasivo(e) {
-            const file = e.target.files[0]; if (!file) return;
+        async function importarExcelAlumnosMasivo(e) {
+            const file = e.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(evt) {
+            reader.onload = async function(evt) {
                 const data = new Uint8Array(evt.target.result);
                 const wb = XLSX.read(data, { type: 'array' });
                 const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
 
-                baseAlumnos = json.map(f => {
+                const alumnosImportados = json.map(f => {
                     let r = { matricula: '', nombre: '', grupo: '' };
                     Object.keys(f).forEach(k => {
                         let l = k.toLowerCase().trim();
@@ -468,70 +541,102 @@
                     return r;
                 }).filter(r => r.matricula && r.nombre);
 
-                localStorage.setItem('base_alumnos_utc', JSON.stringify(baseAlumnos));
+                if (alumnosImportados.length === 0) return alert("No encontré columnas de matrícula y nombre en el Excel.");
+
+                const { error } = await supabaseClient
+                    .from(TABLA_ALUMNOS)
+                    .upsert(alumnosImportados, { onConflict: 'matricula' });
+
+                if (error) return mostrarErrorSupabase(error, "importar alumnos");
+                await cargarAlumnosSupabase();
                 renderizarModuloAdministracion();
-                alert("Base de alumnos importada con éxito.");
+                alert("Base de alumnos importada con éxito en Supabase.");
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function guardarAlumnoManual() {
+        async function guardarAlumnoManual() {
             const mat = document.getElementById('crud-al-mat').value.trim();
             const nom = document.getElementById('crud-al-nom').value.trim();
             const gru = document.getElementById('crud-al-gru').value.trim();
-
             if(!mat || !nom || !gru) return alert("Rellene todos los campos del estudiante.");
-            baseAlumnos.push({ matricula: mat, nombre: nom, grupo: gru });
-            localStorage.setItem('base_alumnos_utc', JSON.stringify(baseAlumnos));
-            
+
+            const { error } = await supabaseClient
+                .from(TABLA_ALUMNOS)
+                .upsert([{ matricula: mat, nombre: nom, grupo: gru }], { onConflict: 'matricula' });
+
+            if (error) return mostrarErrorSupabase(error, "guardar alumno");
             document.getElementById('crud-al-mat').value = "";
             document.getElementById('crud-al-nom').value = "";
             document.getElementById('crud-al-gru').value = "";
+            await cargarAlumnosSupabase();
             renderizarModuloAdministracion();
         }
 
-        function eliminarAlumnoCat(index) {
-            if(confirm("¿Desea dar de baja este estudiante de la base general?")) {
-                baseAlumnos.splice(index, 1);
-                localStorage.setItem('base_alumnos_utc', JSON.stringify(baseAlumnos));
-                renderizarModuloAdministracion();
-            }
+        async function eliminarAlumnoCat(index) {
+            const alumno = baseAlumnos[index];
+            if(!alumno || !confirm("¿Desea dar de baja este estudiante de la base general?")) return;
+            const { error } = await supabaseClient
+                .from(TABLA_ALUMNOS)
+                .delete()
+                .eq('id', alumno.id);
+
+            if (error) return mostrarErrorSupabase(error, "eliminar alumno");
+            await cargarAlumnosSupabase();
+            renderizarModuloAdministracion();
         }
 
-        function agregarPersonal(tipo) {
+        async function agregarPersonal(tipo) {
+            let val = "";
             if(tipo === 'maestros') {
-                const val = document.getElementById('input-nuevo-maestro').value.trim();
-                if(val) listaMaestros.push(val);
+                val = document.getElementById('input-nuevo-maestro').value.trim();
                 document.getElementById('input-nuevo-maestro').value = "";
-                localStorage.setItem('list_maestros_utc', JSON.stringify(listaMaestros));
             } else {
-                const val = document.getElementById('input-nuevo-directivo').value.trim();
-                if(val) listaDirectivos.push(val);
+                val = document.getElementById('input-nuevo-directivo').value.trim();
                 document.getElementById('input-nuevo-directivo').value = "";
-                localStorage.setItem('list_directivos_utc', JSON.stringify(listaDirectivos));
             }
+
+            if (!val) return;
+            const { error } = await supabaseClient
+                .from(TABLA_PERSONAL)
+                .insert([{ tipo: tipo, nombre: val }]);
+
+            if (error) return mostrarErrorSupabase(error, "agregar personal");
+            await cargarPersonalSupabase();
             renderizarModuloAdministracion();
         }
 
-        function eliminarPersonal(tipo, index) {
-            if (tipo === 'maestros') {
-                listaMaestros.splice(index, 1);
-                localStorage.setItem('list_maestros_utc', JSON.stringify(listaMaestros));
-            } else {
-                listaDirectivos.splice(index, 1);
-                localStorage.setItem('list_directivos_utc', JSON.stringify(listaDirectivos));
+        async function eliminarPersonal(tipo, index) {
+            const lista = tipo === 'maestros' ? listaMaestros : listaDirectivos;
+            const item = lista[index];
+            if (!item) return;
+
+            if (!item.id) {
+                lista.splice(index, 1);
+                return renderizarModuloAdministracion();
             }
+
+            const { error } = await supabaseClient
+                .from(TABLA_PERSONAL)
+                .delete()
+                .eq('id', item.id);
+
+            if (error) return mostrarErrorSupabase(error, "eliminar personal");
+            await cargarPersonalSupabase();
             renderizarModuloAdministracion();
         }
 
-        // BUSCADOR PREDICTIVO INSTITUCIONAL
         function buscarAlumnoPredictivo(valor) {
             const contenedor = document.getElementById('sugerencias-alumno');
             contenedor.innerHTML = '';
             const busqueda = valor.toLowerCase().trim();
             if (busqueda.length < 2) return contenedor.classList.add('hidden');
 
-            const coincidencias = baseAlumnos.filter(a => a.matricula.toLowerCase().includes(busqueda) || a.nombre.toLowerCase().includes(busqueda)).slice(0, 5);
+            const coincidencias = baseAlumnos.filter(a =>
+                (a.matricula || '').toLowerCase().includes(busqueda) ||
+                (a.nombre || '').toLowerCase().includes(busqueda)
+            ).slice(0, 5);
+
             if (coincidencias.length === 0) {
                 contenedor.innerHTML = `<div class="p-2 text-gray-400 italic">No registrado en base.</div>`;
                 return contenedor.classList.remove('hidden');
@@ -552,34 +657,43 @@
             contenedor.classList.remove('hidden');
         }
 
-        document.addEventListener('click', e => { if (e.target.id !== 'matricula') document.getElementById('sugerencias-alumno').classList.add('hidden'); });
+        document.addEventListener('click', e => {
+            const sugerencias = document.getElementById('sugerencias-alumno');
+            if (sugerencias && e.target.id !== 'matricula') sugerencias.classList.add('hidden');
+        });
 
-        // PROCESAMIENTO ANALÍTICO DINÁMICO (FILTROS DE DASHBOARD POR ALUMNO ESPECÍFICO)
         function actualizarSelectorAlumnos() {
             const selector = document.getElementById('filtro-alumno');
             selector.innerHTML = '<option value="todos">Todos los Alumnos Registrados</option>';
-            const alumnosUnicos = [...new Set(incidencias.map(i => i.nombre))].sort();
+            const alumnosUnicos = [...new Set(incidencias.map(i => i.nombre).filter(Boolean))].sort();
             alumnosUnicos.forEach(alumno => {
-                const opt = document.createElement('option'); opt.value = alumno; opt.textContent = alumno; selector.appendChild(opt);
+                const opt = document.createElement('option');
+                opt.value = alumno;
+                opt.textContent = alumno;
+                selector.appendChild(opt);
             });
         }
 
         function procesarAnaliticas() {
             const filtroTiempo = document.getElementById('filtro-tiempo').value;
             const filtroAlumno = document.getElementById('filtro-alumno').value;
-            const buscadorGlobal = document.getElementById('buscador-global').value.toLowerCase().trim();
+            const buscador = document.getElementById('buscador-global');
+            const buscadorGlobal = buscador ? buscador.value.toLowerCase().trim() : "";
 
             let filtradas = [...incidencias];
             const ahora = Date.now();
 
             if (filtroTiempo === 'semana') {
-                filtradas = filtradas.filter(i => (ahora - (i.timestamp || ahora)) <= 7 * 24 * 60 * 60 * 1000);
+                filtradas = filtradas.filter(i => (ahora - (Number(i.timestamp) || ahora)) <= 7 * 24 * 60 * 60 * 1000);
             } else if (filtroTiempo === 'mes') {
-                filtradas = filtradas.filter(i => (ahora - (i.timestamp || ahora)) <= 30 * 24 * 60 * 60 * 1000);
+                filtradas = filtradas.filter(i => (ahora - (Number(i.timestamp) || ahora)) <= 30 * 24 * 60 * 60 * 1000);
             }
 
             if (filtroAlumno !== 'todos') filtradas = filtradas.filter(i => i.nombre === filtroAlumno);
-            if (buscadorGlobal !== "") filtradas = filtradas.filter(i => i.nombre.toLowerCase().includes(buscadorGlobal) || i.matricula.toLowerCase().includes(buscadorGlobal));
+            if (buscadorGlobal !== "") filtradas = filtradas.filter(i =>
+                (i.nombre || '').toLowerCase().includes(buscadorGlobal) ||
+                (i.matricula || '').toLowerCase().includes(buscadorGlobal)
+            );
 
             const total = filtradas.length;
             const academico = filtradas.filter(i => i.eje === 'Académica').length;
@@ -591,12 +705,13 @@
             document.getElementById('kpi-conducta').innerText = conducta;
             document.getElementById('kpi-emocional').innerText = emocional;
 
-            const cuerpo = document.getElementById('tabla-cuerpo'); cuerpo.innerHTML = '';
-            
+            const cuerpo = document.getElementById('tabla-cuerpo');
+            cuerpo.innerHTML = '';
+
             if (total === 0) {
                 cuerpo.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-gray-400 italic">No se hallaron coincidencias.</td></tr>`;
             } else {
-                const ordenadas = [...filtradas].sort((a, b) => b.timestamp - a.timestamp);
+                const ordenadas = [...filtradas].sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
                 ordenadas.forEach(item => {
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
@@ -607,7 +722,7 @@
                         <td class="px-4 py-3 whitespace-nowrap text-xs font-bold ${item.eje==='Académica'?'text-utc-orange':item.eje==='Conductual'?'text-amber-600':'text-teal-600'}">${item.tipo}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-xs font-bold uppercase text-gray-600">${item.usuarioRegistro || 'ADMINISTRADOR'}</td>
                         <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="${item.descripcion}">${item.descripcion}</td>
-                        <td class="px-4 py-3 text-center whitespace-nowrap th-eliminar-registro ${rolActivo !== "Administrador" ? "hidden" : ""}"><button onclick="eliminarIncidenciaHistorial(${item.timestamp})" class="text-red-500 font-bold hover:underline">Borrar</button></td>
+                        <td class="px-4 py-3 text-center whitespace-nowrap th-eliminar-registro ${rolActivo !== "Administrador" ? "hidden" : ""}"><button onclick="eliminarIncidenciaHistorial(${item.id})" class="text-red-500 font-bold hover:underline">Borrar</button></td>
                     `;
                     cuerpo.appendChild(fila);
                 });
@@ -615,54 +730,71 @@
 
             if (chartTipo && chartFlujo) {
                 chartTipo.data.datasets[0].data = [academico, conducta, emocional];
-                chartFlujo.data.datasets[0].data = [academico, total, conducta, emocional, total / 2];
-                chartTipo.update(); chartFlujo.update();
+                chartFlujo.data.datasets[0].data = [academico, total, conducta, emocional, Math.round(total / 2)];
+                chartTipo.update();
+                chartFlujo.update();
             }
         }
 
-        function eliminarIncidenciaHistorial(ts) {
-            if(confirm("¿Está seguro de eliminar formalmente este registro del historial institucional?")) {
-                incidencias = incidencias.filter(i => i.timestamp !== ts);
-                localStorage.setItem('incidencias_utc', JSON.stringify(incidencias));
-                procesarAnaliticas();
-                actualizarSelectorAlumnos();
-            }
+        async function eliminarIncidenciaHistorial(id) {
+            if(!confirm("¿Está seguro de eliminar formalmente este registro del historial institucional?")) return;
+            const { error } = await supabaseClient
+                .from(TABLA_INCIDENCIAS)
+                .delete()
+                .eq('id', id);
+
+            if (error) return mostrarErrorSupabase(error, "eliminar incidencia");
+            await cargarIncidenciasSupabase();
+            procesarAnaliticas();
+            actualizarSelectorAlumnos();
         }
 
-        function guardarIncidencia(e) {
+        async function guardarIncidencia(e) {
             e.preventDefault();
             const cat = document.getElementById('categoria-seleccionada').value;
             if(!cat) return alert('Por favor elija una categoría.');
 
+            const timestampActual = Date.now();
             const nuevaIncidencia = {
                 fecha: new Date().toLocaleDateString('es-MX'),
-                timestamp: Date.now(),
+                timestamp: timestampActual,
                 matricula: document.getElementById('matricula').value.trim(),
                 nombre: document.getElementById('nombre').value.trim(),
                 grupo: document.getElementById('grupo').value.trim(),
                 tipo: `${cat} - ${document.getElementById('subcategoria').value}`,
                 descripcion: document.getElementById('descripcion').value.trim(),
                 eje: cat,
-                usuarioRegistro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}` // Guarda Trazabilidad Completa
+                usuario_registro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}`
             };
 
-            incidencias.push(nuevaIncidencia);
-            localStorage.setItem('incidencias_utc', JSON.stringify(incidencias));
-            
+            const { error } = await supabaseClient
+                .from(TABLA_INCIDENCIAS)
+                .insert([nuevaIncidencia]);
+
+            if (error) return mostrarErrorSupabase(error, "guardar incidencia");
+
+            await cargarIncidenciasSupabase();
             document.getElementById('form-incidencia').reset();
             document.getElementById('contenedor-subcategoria').classList.add('hidden');
-            document.querySelectorAll('.cat-btn').forEach(b => { b.classList.remove('bg-utc-orange', 'bg-utc-blue', 'bg-teal-600', 'text-white'); b.classList.add('bg-gray-50', 'text-gray-600'); });
+            document.querySelectorAll('.cat-btn').forEach(b => {
+                b.classList.remove('bg-utc-orange', 'bg-utc-blue', 'bg-teal-600', 'text-white', 'border-utc-orange', 'border-utc-blue', 'border-teal-600');
+                b.classList.add('bg-gray-50', 'text-gray-600');
+            });
             document.getElementById('categoria-seleccionada').value = "";
-
-            alert('Incidencia registrada.');
+            alert('Incidencia registrada en Supabase.');
             actualizarSelectorAlumnos();
             switchTab('dashboard');
+            procesarAnaliticas();
         }
 
         function selectCategoria(cat) {
             document.getElementById('categoria-seleccionada').value = cat;
-            document.querySelectorAll('.cat-btn').forEach(btn => { btn.classList.remove('bg-utc-orange', 'text-white', 'border-utc-orange', 'bg-utc-blue', 'text-white', 'bg-teal-600'); btn.classList.add('bg-gray-50', 'text-gray-600'); });
-            const activeBtn = document.getElementById(`cat-${cat}`); activeBtn.classList.remove('bg-gray-50', 'text-gray-600');
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-utc-orange', 'text-white', 'border-utc-orange', 'bg-utc-blue', 'border-utc-blue', 'bg-teal-600', 'border-teal-600');
+                btn.classList.add('bg-gray-50', 'text-gray-600');
+            });
+            const activeBtn = document.getElementById(`cat-${cat}`);
+            activeBtn.classList.remove('bg-gray-50', 'text-gray-600');
             if(cat === 'Académica') activeBtn.classList.add('bg-utc-orange', 'text-white', 'border-utc-orange');
             if(cat === 'Conductual') activeBtn.classList.add('bg-utc-blue', 'text-white', 'border-utc-blue');
             if(cat === 'Emocional') activeBtn.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
@@ -670,50 +802,89 @@
             const contenedor = document.getElementById('contenedor-subcategoria');
             const selectSub = document.getElementById('subcategoria');
             selectSub.innerHTML = '<option value="">-- Seleccione la causa --</option>';
-            opcionesCatalogo[cat].forEach(opc => { let optEl = document.createElement('option'); optEl.value = opc; optEl.textContent = opc; selectSub.appendChild(optEl); });
+            opcionesCatalogo[cat].forEach(opc => {
+                let optEl = document.createElement('option');
+                optEl.value = opc;
+                optEl.textContent = opc;
+                selectSub.appendChild(optEl);
+            });
             contenedor.classList.remove('hidden');
         }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            document.querySelectorAll('.tab-btn').forEach(el => { el.classList.remove('bg-utc-orange', 'text-white', 'shadow-md'); el.classList.add('text-gray-300', 'hover:bg-white/10', 'hover:text-white'); });
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-utc-orange', 'text-white', 'shadow-md');
+                el.classList.add('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
+            });
             document.getElementById(`btn-${tabId}`).classList.remove('text-gray-300', 'hover:bg-white/10', 'hover:text-white');
             document.getElementById(`btn-${tabId}`).classList.add('bg-utc-orange', 'text-white', 'shadow-md');
             if(window.innerWidth < 768) toggleMenu();
             if (tabId === 'dashboard') procesarAnaliticas();
+            if (tabId === 'administracion') renderizarModuloAdministracion();
         }
 
-        function toggleMenu() { document.getElementById('menu-items').classList.toggle('hidden'); }
-        function filtrarPorBuscador() { procesarAnaliticas(); }
+        function toggleMenu() {
+            document.getElementById('menu-items').classList.toggle('hidden');
+        }
+
+        function filtrarPorBuscador() {
+            procesarAnaliticas();
+        }
 
         function inicializarGraficas() {
             if(chartFlujo || chartTipo) return;
             const ctxFlujo = document.getElementById('chartFlujoSemanal').getContext('2d');
-            chartFlujo = new Chart(ctxFlujo, { type: 'line', data: { labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'], datasets: [{ label: 'Volumen', data: [0, 0, 0, 0, 0], borderColor: '#c94a29', backgroundColor: 'rgba(201, 74, 41, 0.05)', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            chartFlujo = new Chart(ctxFlujo, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'],
+                    datasets: [{ label: 'Volumen', data: [0, 0, 0, 0, 0], borderColor: '#c94a29', backgroundColor: 'rgba(201, 74, 41, 0.05)', fill: true, tension: 0.3 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
             const ctxTipo = document.getElementById('chartTipoIncidencia').getContext('2d');
-            chartTipo = new Chart(ctxTipo, { type: 'doughnut', data: { labels: ['Académica', 'Conductual', 'Emocional'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#c94a29', '#0d2c54', '#0d9488'], borderWidth: 2, borderColor: '#ffffff' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } });
+            chartTipo = new Chart(ctxTipo, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Académica', 'Conductual', 'Emocional'],
+                    datasets: [{ data: [0, 0, 0], backgroundColor: ['#c94a29', '#0d2c54', '#0d9488'], borderWidth: 2, borderColor: '#ffffff' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            });
         }
 
         function exportarExcel() {
             if (incidencias.length === 0) return alert('No hay datos.');
             const hoja = XLSX.utils.json_to_sheet(incidencias.map(({fecha, matricula, nombre, grupo, tipo, usuarioRegistro, descripcion}) => ({
-                Fecha: fecha, Matrícula: matricula, Alumno: nombre, Grupo: grupo, Incidencia: tipo, "Reportó (Cargo y Nombre)": usuarioRegistro, Detalles: descripcion
+                Fecha: fecha,
+                Matrícula: matricula,
+                Alumno: nombre,
+                Grupo: grupo,
+                Incidencia: tipo,
+                "Reportó (Cargo y Nombre)": usuarioRegistro,
+                Detalles: descripcion
             })));
-            const libro = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(libro, hoja, "Incidencias UTC");
+            const libro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(libro, hoja, "Incidencias UTC");
             XLSX.writeFile(libro, `Reporte_General_Incidencias_UTC.xlsx`);
         }
 
         function exportarPDF() {
             if (incidencias.length === 0) return alert('No hay datos.');
-            const { jsPDF } = window.jspdf; const doc = new jsPDF();
-            doc.setFontSize(12); doc.setTextColor(13, 44, 84);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(12);
+            doc.setTextColor(13, 44, 84);
             doc.text("UNIVERSIDAD TRES CULTURAS - EXPEDIENTE CENTRAL DE INCIDENCIAS", 14, 20);
             const columnas = ["Fecha", "Matrícula", "Alumno", "Grupo", "Tipo Incidencia", "Quién Reportó", "Detalles"];
             const filas = incidencias.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, i.usuarioRegistro, i.descripcion]);
             doc.autoTable({ startY: 26, head: [columnas], body: filas, headStyles: { fillColor: [13, 44, 84] }, styles: { fontSize: 7 } });
             doc.save(`Expediente_Incidencias_UTC.pdf`);
         }
+
     </script>
 </body>
 </html>
