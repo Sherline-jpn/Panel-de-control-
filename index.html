@@ -389,7 +389,7 @@
             }
         }
 
-        async function validarPassword(e) {
+        function validarPassword(e) {
             e.preventDefault();
             const passInput = document.getElementById('login-pass').value;
 
@@ -399,13 +399,6 @@
                 ingresarAlSistema();
             } else if (passInput === PASS_OPERADOR) {
                 rolActivo = "Operador";
-
-                // Antes de mostrar el acceso de operador, actualiza maestros/directivos desde Supabase.
-                // Así aparecen los usuarios nuevos sin tener que modificar el código.
-                await cargarDatosSupabase();
-
-                document.getElementById('login-cargo-tipo').value = "";
-                document.getElementById('login-cargo-nombre').innerHTML = '<option value="">-- Seleccione primero el cargo --</option>';
                 document.getElementById('form-login-pass').classList.add('hidden');
                 document.getElementById('form-login-cargo').classList.remove('hidden');
             } else {
