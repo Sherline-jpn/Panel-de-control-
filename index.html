@@ -343,7 +343,7 @@
         let chartFlujo, chartTipo;
 
         function obtenerAutorReporte(i) {
-            return i.usuarioRegistro || i.usuarioregistro || "Sin autor registrado";
+            return i.usuarioRegistro || i.usuario_registro || i.usuarioregistro || "Sin autor registrado";
         }
 
         function normalizarIncidencia(i) {
@@ -772,13 +772,15 @@
                 tipo: `${cat} - ${document.getElementById('subcategoria').value}`,
                 descripcion: document.getElementById('descripcion').value.trim(),
                 eje: cat,
-                usuario_registro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}`
+                usuario_registro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}`,
+                usuarioregistro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}`
             };
 
             const { error } = await supabaseClient.from("incidencias").insert([nuevaIncidencia]);
             if (error) {
                 console.error(error);
-                return alert("No se pudo registrar la incidencia en Supabase.");
+                alert(error.message || "No se pudo registrar la incidencia en Supabase.");
+                return;
             }
 
             document.getElementById('form-incidencia').reset();
@@ -896,14 +898,14 @@
 
         function exportarExcel() {
             if (incidencias.length === 0) return alert('No hay datos.');
-            const hoja = XLSX.utils.json_to_sheet(incidencias.map(({fecha, matricula, nombre, grupo, tipo, usuarioRegistro, descripcion}) => ({
-                Fecha: fecha,
-                Matrícula: matricula,
-                Alumno: nombre,
-                Grupo: grupo,
-                Incidencia: tipo,
-                "Reportó (Cargo y Nombre)": usuarioRegistro || usuarioregistro || "Sin autor registrado",
-                Detalles: descripcion
+            const hoja = XLSX.utils.json_to_sheet(incidencias.map(i => ({
+                Fecha: i.fecha,
+                Matrícula: i.matricula,
+                Alumno: i.nombre,
+                Grupo: i.grupo,
+                Incidencia: i.tipo,
+                "Reportó (Cargo y Nombre)": obtenerAutorReporte(i),
+                Detalles: i.descripcion
             })));
             const libro = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(libro, hoja, "Incidencias UTC");
