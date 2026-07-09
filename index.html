@@ -398,9 +398,14 @@
                 usuarioActivo = { nombre: "Pamela Elizabeth", cargo: "Administrador" };
                 ingresarAlSistema();
             } else if (passInput === PASS_OPERADOR) {
-                rolActivo = "Operador";
-                document.getElementById('form-login-pass').classList.add('hidden');
-                document.getElementById('form-login-cargo').classList.remove('hidden');
+    rolActivo = "Operador";
+
+    // Actualiza la lista de maestros y directivos desde Supabase
+    await cargarDatosSupabase();
+
+    document.getElementById('form-login-pass').classList.add('hidden');
+    document.getElementById('form-login-cargo').classList.remove('hidden');
+}
             } else {
                 alert("Contraseña institucional incorrecta.");
             }
