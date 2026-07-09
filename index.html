@@ -772,7 +772,7 @@
                 tipo: `${cat} - ${document.getElementById('subcategoria').value}`,
                 descripcion: document.getElementById('descripcion').value.trim(),
                 eje: cat,
-                usuarioregistro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}`
+                usuario_registro: `${usuarioActivo.cargo}: ${usuarioActivo.nombre}`
             };
 
             const { error } = await supabaseClient.from("incidencias").insert([nuevaIncidencia]);
