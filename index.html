@@ -132,6 +132,9 @@
                             <option value="semana">Esta Semana (Últimos 7 días)</option>
                             <option value="mes">Este Mes (Últimos 30 días)</option>
                         </select>
+                        <select id="filtro-grupo" onchange="procesarAnaliticas()" class="bg-gray-50 border border-gray-300 text-xs rounded-lg px-3 py-2 text-gray-700 focus:outline-none max-w-xs font-bold">
+                            <option value="todos">Todos los Grupos</option>
+                        </select>
                         <select id="filtro-alumno" onchange="procesarAnaliticas()" class="bg-gray-50 border border-gray-300 text-xs rounded-lg px-3 py-2 text-gray-700 focus:outline-none max-w-xs font-bold">
                             <option value="todos">Todos los Alumnos Registrados</option>
                         </select>
@@ -223,9 +226,12 @@
                         <h2 class="text-xl font-bold text-utc-blue">Registros Almacenados</h2>
                         <p class="text-xs md:text-sm text-gray-500">Historial centralizado institucional.</p>
                     </div>
-                    <div id="zona-exportar" class="flex gap-2 w-full sm:w-auto hidden">
-                        <button onclick="exportarExcel()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">Exportar Excel</button>
-                        <button onclick="exportarPDF()" class="flex-1 sm:flex-none bg-utc-orange hover:bg-[#b03f22] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">Exportar PDF</button>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="actualizarHistorial()" class="flex-1 sm:flex-none bg-utc-blue hover:bg-[#143d73] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">Actualizar</button>
+                        <div id="zona-exportar" class="flex gap-2 flex-1 sm:flex-none hidden">
+                            <button onclick="exportarExcel()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">Exportar Excel</button>
+                            <button onclick="exportarPDF()" class="flex-1 sm:flex-none bg-utc-orange hover:bg-[#b03f22] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm text-center">Exportar PDF</button>
+                        </div>
                     </div>
                 </div>
 
@@ -336,10 +342,14 @@
         let personalDirectivos = [];
         let chartFlujo, chartTipo;
 
+        function obtenerAutorReporte(i) {
+            return i.usuarioRegistro || i.usuarioregistro || "Sin autor registrado";
+        }
+
         function normalizarIncidencia(i) {
             return {
                 ...i,
-                usuarioRegistro: i.usuarioRegistro || i.usuarioregistro || "ADMINISTRADOR"
+                usuarioRegistro: obtenerAutorReporte(i)
             };
         }
 
@@ -641,20 +651,31 @@
         });
 
         function actualizarSelectorAlumnos() {
-            const selector = document.getElementById('filtro-alumno');
-            selector.innerHTML = '<option value="todos">Todos los Alumnos Registrados</option>';
+            const selectorAlumno = document.getElementById('filtro-alumno');
+            selectorAlumno.innerHTML = '<option value="todos">Todos los Alumnos Registrados</option>';
             const alumnosUnicos = [...new Set(incidencias.map(i => i.nombre).filter(Boolean))].sort();
             alumnosUnicos.forEach(alumno => {
                 const opt = document.createElement('option');
                 opt.value = alumno;
                 opt.textContent = alumno;
-                selector.appendChild(opt);
+                selectorAlumno.appendChild(opt);
+            });
+
+            const selectorGrupo = document.getElementById('filtro-grupo');
+            selectorGrupo.innerHTML = '<option value="todos">Todos los Grupos</option>';
+            const gruposUnicos = [...new Set(incidencias.map(i => i.grupo).filter(Boolean))].sort();
+            gruposUnicos.forEach(grupo => {
+                const opt = document.createElement('option');
+                opt.value = grupo;
+                opt.textContent = grupo;
+                selectorGrupo.appendChild(opt);
             });
         }
 
         function procesarAnaliticas() {
             const filtroTiempo = document.getElementById('filtro-tiempo').value;
             const filtroAlumno = document.getElementById('filtro-alumno').value;
+            const filtroGrupo = document.getElementById('filtro-grupo').value;
             const buscador = document.getElementById('buscador-global');
             const buscadorGlobal = buscador ? buscador.value.toLowerCase().trim() : "";
 
@@ -667,6 +688,7 @@
                 filtradas = filtradas.filter(i => (ahora - Number(i.timestamp || ahora)) <= 30 * 24 * 60 * 60 * 1000);
             }
 
+            if (filtroGrupo !== 'todos') filtradas = filtradas.filter(i => i.grupo === filtroGrupo);
             if (filtroAlumno !== 'todos') filtradas = filtradas.filter(i => i.nombre === filtroAlumno);
             if (buscadorGlobal !== "") {
                 filtradas = filtradas.filter(i =>
@@ -700,7 +722,7 @@
                         <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-900">${item.nombre || ""}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-gray-600">${item.grupo || ""}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-xs font-bold ${item.eje==='Académica'?'text-utc-orange':item.eje==='Conductual'?'text-amber-600':'text-teal-600'}">${item.tipo || ""}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-xs font-bold uppercase text-gray-600">${item.usuarioRegistro || 'ADMINISTRADOR'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs font-bold uppercase text-gray-600">${obtenerAutorReporte(item)}</td>
                         <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="${item.descripcion || ""}">${item.descripcion || ""}</td>
                         <td class="px-4 py-3 text-center whitespace-nowrap th-eliminar-registro ${rolActivo !== "Administrador" ? "hidden" : ""}">
                             <button onclick="eliminarIncidenciaHistorial(${item.id})" class="text-red-500 font-bold hover:underline">Borrar</button>
@@ -716,6 +738,13 @@
                 chartTipo.update();
                 chartFlujo.update();
             }
+        }
+
+
+        async function actualizarHistorial() {
+            await cargarDatosSupabase();
+            procesarAnaliticas();
+            alert("Historial actualizado correctamente.");
         }
 
         async function eliminarIncidenciaHistorial(id) {
@@ -873,7 +902,7 @@
                 Alumno: nombre,
                 Grupo: grupo,
                 Incidencia: tipo,
-                "Reportó (Cargo y Nombre)": usuarioRegistro,
+                "Reportó (Cargo y Nombre)": usuarioRegistro || usuarioregistro || "Sin autor registrado",
                 Detalles: descripcion
             })));
             const libro = XLSX.utils.book_new();
@@ -891,7 +920,7 @@
             doc.text("UNIVERSIDAD TRES CULTURAS - EXPEDIENTE CENTRAL DE INCIDENCIAS", 14, 20);
 
             const columnas = ["Fecha", "Matrícula", "Alumno", "Grupo", "Tipo Incidencia", "Quién Reportó", "Detalles"];
-            const filas = incidencias.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, i.usuarioRegistro, i.descripcion]);
+            const filas = incidencias.map(i => [i.fecha, i.matricula, i.nombre, i.grupo, i.tipo, obtenerAutorReporte(i), i.descripcion]);
 
             doc.autoTable({
                 startY: 26,
