@@ -389,7 +389,7 @@
             }
         }
 
-        function validarPassword(e) {
+        async function validarPassword(e) {
             e.preventDefault();
             const passInput = document.getElementById('login-pass').value;
 
@@ -398,14 +398,16 @@
                 usuarioActivo = { nombre: "Pamela Elizabeth", cargo: "Administrador" };
                 ingresarAlSistema();
             } else if (passInput === PASS_OPERADOR) {
-    rolActivo = "Operador";
+                rolActivo = "Operador";
 
-    // Actualiza la lista de maestros y directivos desde Supabase
-    await cargarDatosSupabase();
+                // Antes de mostrar el acceso de operador, actualiza maestros/directivos desde Supabase.
+                // Así aparecen los usuarios nuevos sin tener que modificar el código.
+                await cargarDatosSupabase();
 
-    document.getElementById('form-login-pass').classList.add('hidden');
-    document.getElementById('form-login-cargo').classList.remove('hidden');
-}
+                document.getElementById('login-cargo-tipo').value = "";
+                document.getElementById('login-cargo-nombre').innerHTML = '<option value="">-- Seleccione primero el cargo --</option>';
+                document.getElementById('form-login-pass').classList.add('hidden');
+                document.getElementById('form-login-cargo').classList.remove('hidden');
             } else {
                 alert("Contraseña institucional incorrecta.");
             }
